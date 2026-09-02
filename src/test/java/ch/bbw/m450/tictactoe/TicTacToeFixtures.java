@@ -1,13 +1,15 @@
 package ch.bbw.m450.tictactoe;
 
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
 
 /**
  * Shared test helpers and fixtures for the TicTacToe tests.
  *
  * <p>Helpers build board states from a compact string notation, while the
- * fixtures expose ready-to-use board constants for common scenarios so the
- * individual tests stay short and readable.</p>
+ * fixtures expose ready-to-use board constants and argument providers for
+ * common scenarios so the individual tests stay short and readable.</p>
  */
 final class TicTacToeFixtures {
 
@@ -56,5 +58,38 @@ final class TicTacToeFixtures {
 	/** Three circles in the left column (0, 3, 6). */
 	static Stone[] circleWinningColumn() {
 		return boardOf("O.." + "O.." + "O..");
+	}
+
+	// --- Argument providers for parameterized tests ----------------------
+
+	/**
+	 * Winning boards for {@link Stone#CROSS}: every row, column and diagonal.
+	 * Each argument is (boardString, expectedWinner).
+	 */
+	static Stream<Arguments> winningBoardsForCross() {
+		return Stream.of(
+				Arguments.of("XXX......", Stone.CROSS), // top row
+				Arguments.of("...XXX...", Stone.CROSS), // middle row
+				Arguments.of("......XXX", Stone.CROSS), // bottom row
+				Arguments.of("X..X..X..", Stone.CROSS), // left column
+				Arguments.of(".X..X..X.", Stone.CROSS), // middle column
+				Arguments.of("..X..X..X", Stone.CROSS), // right column
+				Arguments.of("X...X...X", Stone.CROSS), // main diagonal
+				Arguments.of("..X.X.X..", Stone.CROSS)  // anti diagonal
+		);
+	}
+
+	/**
+	 * Boards that are NOT a win for the given color.
+	 * Each argument is (boardString, colorToCheck).
+	 */
+	static Stream<Arguments> nonWinningBoards() {
+		return Stream.of(
+				Arguments.of(".........", Stone.CROSS),  // empty
+				Arguments.of("XX.......", Stone.CROSS),  // only two in a row
+				Arguments.of("XOXOXOOXO", Stone.CROSS),  // full board, no cross line
+				Arguments.of("XXX......", Stone.CIRCLE), // cross wins, but we check circle
+				Arguments.of("XO.XO.O.X", Stone.CIRCLE)  // scattered, no circle line
+		);
 	}
 }
