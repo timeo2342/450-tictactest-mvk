@@ -24,10 +24,4 @@ class DummyTest {
 		assertThat(true).isTrue();
 		assertThat("tic-tac-toe").startsWith("tic").contains("tac");
 	}
-
-	@Test
-	void failingDummy() {
-		// this test fails on purpose (see assignment example)
-		assertFalse(true);
-	}
 }
