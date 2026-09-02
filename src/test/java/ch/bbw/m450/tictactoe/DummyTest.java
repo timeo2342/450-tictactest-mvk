@@ -16,7 +16,7 @@ class DummyTest {
 		// classic JUnit assertion
 		assertFalse(false);
 		assertTrue(true);
-	}g
+	}
 
 	@Test
 	void assertJDummy() {
