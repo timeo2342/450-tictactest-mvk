@@ -1,9 +1,11 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow builds the Java project with Gradle and runs the tests.
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+# CI/CD-Pipeline für TicTacTest.
+#
+# Schritt 1+2: Das eigene Container-Image (aus .devcontainer/Dockerfile) wird
+#              gebaut, mit :latest getaggt und in die GitHub Container Registry
+#              (ghcr.io) hochgeladen.
+# Schritt 3:   Die Tests laufen in genau diesem Image aus ghcr.io.
+#
+# GHCR-Doku: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 
 name: Java CI with Gradle
 
@@ -13,35 +15,70 @@ on:
   pull_request:
     branches: [ "main" ]
 
+env:
+  # Image-Name in der GitHub Container Registry (kleingeschrieben erforderlich).
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
 jobs:
-  test:
+  # --- Schritt 1 + 2: Image bauen, taggen (:latest) und zu ghcr.io pushen ----
+  build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      packages: write            # nötig, um in ghcr.io zu pushen
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
+    - name: In die GitHub Container Registry einloggen
+      uses: docker/login-action@v3
       with:
-        java-version: '21'
-        distribution: 'temurin'
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
-    # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+    # Image-Namen in Kleinbuchstaben umwandeln (ghcr verlangt lowercase).
+    - name: Image-Namen normalisieren
+      id: image
+      run: echo "name=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
-    - name: Make Gradle Wrapper executable
+    - name: Image bauen und mit :latest pushen
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: .devcontainer/Dockerfile
+        push: true
+        tags: ${{ steps.image.outputs.name }}:latest
+
+  # --- Schritt 3: Tests laufen IM Image aus ghcr.io -------------------------
+  test:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read             # nötig, um das Image aus ghcr.io zu ziehen
+
+    # Der Job läuft direkt im selbst gebauten Container-Image.
+    # --user root: GitHub Actions braucht Schreibrechte in seinen internen
+    # Arbeitsverzeichnissen (/__w/...). Das Image selbst nutzt weiterhin den
+    # non-root User "dev" (siehe Dockerfile) — nur der CI-Job läuft als root.
+    container:
+      image: ghcr.io/${{ github.repository }}:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Gradle Wrapper ausführbar machen
       run: chmod +x gradlew
 
-    - name: Run tests with Gradle Wrapper
+    - name: Tests ausführen (im ghcr.io-Image, Java 25)
       run: ./gradlew test
 
-    # Upload the HTML test report so results are visible in the Actions tab,
-    # even when the build fails. `if: always()` ensures it runs on failure too.
-    - name: Upload test report
+    - name: Testreport hochladen
       if: always()
       uses: actions/upload-artifact@v4
       with:
