@@ -59,8 +59,12 @@ jobs:
       packages: read             # nötig, um das Image aus ghcr.io zu ziehen
 
     # Der Job läuft direkt im selbst gebauten Container-Image.
+    # --user root: GitHub Actions braucht Schreibrechte in seinen internen
+    # Arbeitsverzeichnissen (/__w/...). Das Image selbst nutzt weiterhin den
+    # non-root User "dev" (siehe Dockerfile) — nur der CI-Job läuft als root.
     container:
       image: ghcr.io/${{ github.repository }}:latest
+      options: --user root
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
