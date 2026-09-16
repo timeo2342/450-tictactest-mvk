@@ -1,6 +1,7 @@
 plugins {
 	id 'java'
 	id 'application'
+	id 'jacoco'
 }
 
 repositories {
@@ -21,5 +22,22 @@ test {
 	useJUnitPlatform()
 	testLogging {
 		events "passed", "skipped", "failed"
+	}
+	// Nach den Tests immer den JaCoCo-Report erzeugen.
+	finalizedBy jacocoTestReport
+}
+
+jacoco {
+	// 0.8.14 unterstützt Java-25-Bytecode (class file major version 69).
+	toolVersion = '0.8.14'
+}
+
+jacocoTestReport {
+	// Der Report braucht die Testergebnisse.
+	dependsOn test
+	reports {
+		html.required = true   // HTML-Report (für Artifact / Ansicht)
+		xml.required = true    // XML-Report (für spätere Auswertung / Coverage-Gate)
+		csv.required = false
 	}
 }
