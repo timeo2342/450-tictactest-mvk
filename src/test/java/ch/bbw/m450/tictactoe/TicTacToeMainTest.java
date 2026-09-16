@@ -1,5 +1,6 @@
 package ch.bbw.m450.tictactoe;
 
+import static ch.bbw.m450.tictactoe.TicTacToeFixtures.boardOf;
 import static ch.bbw.m450.tictactoe.TicTacToeFixtures.circleWinningColumn;
 import static ch.bbw.m450.tictactoe.TicTacToeFixtures.crossWinningRow;
 import static ch.bbw.m450.tictactoe.TicTacToeFixtures.emptyBoard;
@@ -10,13 +11,17 @@ import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 import ch.bbw.m450.tictactoe.players.GreedyPlayer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Five tests for the TicTacToe game logic in {@link TicTacToeMain}.
+ * Tests for the TicTacToe game logic in {@link TicTacToeMain}.
  *
  * <p>Board states are provided via {@link TicTacToeFixtures}, player
  * instances via the {@link #setUp()} fixture, so each test stays focused on
- * the GIVEN-WHEN-THEN it verifies.</p>
+ * the GIVEN-WHEN-THEN it verifies. Parameterized tests cover many board
+ * constellations at once.</p>
  */
 class TicTacToeMainTest {
 
@@ -29,6 +34,8 @@ class TicTacToeMainTest {
 		xPlayer = new GreedyPlayer();
 		oPlayer = new GreedyPlayer();
 	}
+
+	// --- Single-case tests ----------------------------------------------
 
 	@Test
 	void isWin_detectsWinningRow() {
@@ -75,5 +82,52 @@ class TicTacToeMainTest {
 		assertThatThrownBy(() -> TicTacToeMain.play(xPlayer, xPlayer))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("players must differ");
+	}
+
+	// --- Parameterized tests --------------------------------------------
+
+	/**
+	 * GIVEN various boards where CROSS has three in a line (row, column, diagonal)
+	 * WHEN checking isWin for the expected winner
+	 * THEN every constellation is detected as a win.
+	 */
+	@ParameterizedTest(name = "board \"{0}\" is a win for {1}")
+	@MethodSource("ch.bbw.m450.tictactoe.TicTacToeFixtures#winningBoardsForCross")
+	void isWin_detectsAllWinningConstellations(String boardString, Stone expectedWinner) {
+		var board = boardOf(boardString);
+		assertThat(TicTacToeMain.isWin(board, expectedWinner)).isTrue();
+	}
+
+	/**
+	 * GIVEN boards that are NOT a win for the checked color
+	 * WHEN checking isWin
+	 * THEN the result is false for each constellation.
+	 */
+	@ParameterizedTest(name = "board \"{0}\" is not a win for {1}")
+	@MethodSource("ch.bbw.m450.tictactoe.TicTacToeFixtures#nonWinningBoards")
+	void isWin_returnsFalseForNonWinningConstellations(String boardString, Stone color) {
+		var board = boardOf(boardString);
+		assertThat(TicTacToeMain.isWin(board, color)).isFalse();
+	}
+
+	/**
+	 * GIVEN a single winning line described inline as CSV
+	 * WHEN checking isWin for CROSS
+	 * THEN each of the eight winning lines is detected.
+	 */
+	@ParameterizedTest(name = "line \"{0}\" wins for CROSS")
+	@CsvSource({
+			"XXX......",
+			"...XXX...",
+			"......XXX",
+			"X..X..X..",
+			".X..X..X.",
+			"..X..X..X",
+			"X...X...X",
+			"..X.X.X.."
+	})
+	void isWin_detectsEachWinningLineForCross(String boardString) {
+		var board = boardOf(boardString);
+		assertThat(TicTacToeMain.isWin(board, Stone.CROSS)).isTrue();
 	}
 }
