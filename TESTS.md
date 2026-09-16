@@ -34,61 +34,64 @@ Zusätzlich prüfen **Parameterized Tests** mehrere Board-Konstellationen auf ei
 
 ## Tests nach dem GIVEN-WHEN-THEN Pattern
 
+> Die IDs in Klammern (z.B. `T1.1`) verweisen auf die Testziele im
+> [`TESTKONZEPT.md`](TESTKONZEPT.md).
+
 ### Dummy-Tests (JUnit & AssertJ)
 
-#### D1. `DummyTest.junitDummy` (JUnit)
+#### D1. `DummyTest.junitDummy` (JUnit) — `T1.1`
 - **GIVEN:** Ein einfacher boolescher Wert
 - **WHEN:** Klassische JUnit-Assertions werden ausgeführt (`assertFalse(false)`, `assertTrue(true)`)
 - **THEN:** Die Assertions sind erfüllt, der Test ist grün
 
-#### D2. `DummyTest.assertJDummy` (AssertJ)
+#### D2. `DummyTest.assertJDummy` (AssertJ) — `T1.2`
 - **GIVEN:** Ein boolescher Wert und ein String `"tic-tac-toe"`
 - **WHEN:** Fluent AssertJ-Assertions werden ausgeführt (`assertThat(...).isTrue()`, `startsWith`, `contains`)
 - **THEN:** Alle Bedingungen sind erfüllt, der Test ist grün
 
 ### TicTacToe-Tests (Spiellogik)
 
-#### 1. `isWin_detectsWinningRow`
+#### 1. `isWin_detectsWinningRow` — `T2.1`
 - **GIVEN:** Ein Spielbrett mit drei Kreuzen (X) in der obersten Reihe (Felder 0, 1, 2)
 - **WHEN:** `isWin(board, CROSS)` wird aufgerufen
 - **THEN:** Das Ergebnis ist `true` (CROSS gewinnt durch die Reihe)
 
-#### 2. `isWin_detectsWinningColumn`
+#### 2. `isWin_detectsWinningColumn` — `T2.2`
 - **GIVEN:** Ein Spielbrett mit drei Kreisen (O) in der linken Spalte (Felder 0, 3, 6)
 - **WHEN:** `isWin(board, CIRCLE)` wird aufgerufen
 - **THEN:** Das Ergebnis ist `true` (CIRCLE gewinnt durch die Spalte)
 
-#### 3. `isWin_returnsFalseForEmptyBoard`
+#### 3. `isWin_returnsFalseForEmptyBoard` — `T2.3`
 - **GIVEN:** Ein komplett leeres Spielbrett
 - **WHEN:** `isWin(board, ...)` wird für beide Farben aufgerufen
 - **THEN:** Das Ergebnis ist jeweils `false` (niemand gewinnt)
 
-#### 4. `play_twoGreedyPlayersResultInCrossWinner`
+#### 4. `play_twoGreedyPlayersResultInCrossWinner` — `T3.1`
 - **GIVEN:** Zwei GreedyPlayer (beide spielen immer das oberste freie Feld)
 - **WHEN:** Ein vollständiges Spiel wird gespielt (`play(x, o)`)
 - **THEN:** Der Startspieler CROSS gewinnt (Diagonale 0-4-8)
 
-#### 5. `play_rejectsIdenticalPlayers`
+#### 5. `play_rejectsIdenticalPlayers` — `T3.2`
 - **GIVEN:** Eine einzige Spieler-Instanz, die für beide Seiten verwendet wird
 - **WHEN:** `play(player, player)` mit derselben Instanz aufgerufen wird
 - **THEN:** Eine `IllegalArgumentException` mit der Meldung "players must differ" wird geworfen
 
 ### Parameterized Tests (mehrere Board-Konstellationen)
 
-#### P1. `isWin_detectsAllWinningConstellations` (`@MethodSource`)
+#### P1. `isWin_detectsAllWinningConstellations` (`@MethodSource`) — `T4.1`
 - **GIVEN:** Acht Spielbretter, bei denen CROSS drei in einer Linie hat — jede Reihe,
   jede Spalte und beide Diagonalen (Quelle: `TicTacToeFixtures.winningBoardsForCross`)
 - **WHEN:** `isWin(board, expectedWinner)` wird für jede Konstellation aufgerufen
 - **THEN:** Jede Konstellation wird als Sieg erkannt (`true`)
 
-#### P2. `isWin_returnsFalseForNonWinningConstellations` (`@MethodSource`)
+#### P2. `isWin_returnsFalseForNonWinningConstellations` (`@MethodSource`) — `T4.2`
 - **GIVEN:** Fünf Spielbretter ohne Gewinnlinie für die geprüfte Farbe — leeres Brett,
   nur zwei in einer Reihe, volles Brett ohne Linie, sowie Bretter, bei denen die
   jeweils andere Farbe gewinnt (Quelle: `TicTacToeFixtures.nonWinningBoards`)
 - **WHEN:** `isWin(board, color)` wird für jede Konstellation aufgerufen
 - **THEN:** Das Ergebnis ist jeweils `false`
 
-#### P3. `isWin_detectsEachWinningLineForCross` (`@CsvSource`)
+#### P3. `isWin_detectsEachWinningLineForCross` (`@CsvSource`) — `T4.3`
 - **GIVEN:** Die acht Gewinnlinien für CROSS, inline als CSV notiert
 - **WHEN:** `isWin(board, CROSS)` wird für jede Zeile aufgerufen
 - **THEN:** Jede Gewinnlinie wird als Sieg erkannt (`true`)
