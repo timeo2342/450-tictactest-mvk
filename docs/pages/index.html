@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>TicTacTest – Coverage Time-Series</title>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+	<style>
+		body { font-family: system-ui, sans-serif; margin: 2rem; color: #222; }
+		h1 { font-size: 1.5rem; }
+		#chart-wrap { max-width: 900px; }
+		.meta { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+	</style>
+</head>
+<body>
+	<h1>TicTacTest – Test Coverage über die Zeit (main)</h1>
+	<p class="meta">Line Coverage in Prozent. Datenquelle: <code>coverage-history.csv</code></p>
+	<div id="chart-wrap">
+		<canvas id="coverageChart"></canvas>
+	</div>
+
+	<script>
+		// CSV laden und als Liniendiagramm zeichnen.
+		fetch('coverage-history.csv')
+			.then(r => r.text())
+			.then(text => {
+				const rows = text.trim().split('\n').slice(1); // Kopfzeile entfernen
+				const labels = [];
+				const values = [];
+				for (const row of rows) {
+					const [datum, commit, coverage] = row.split(',');
+					if (!datum) continue;
+					labels.push(datum + ' (' + (commit || '').slice(0, 7) + ')');
+					values.push(parseFloat(coverage));
+				}
+				new Chart(document.getElementById('coverageChart'), {
+					type: 'line',
+					data: {
+						labels: labels,
+						datasets: [{
+							label: 'Line Coverage (%)',
+							data: values,
+							borderColor: '#2e7d32',
+							backgroundColor: 'rgba(46,125,50,0.1)',
+							fill: true,
+							tension: 0.2,
+							pointRadius: 4
+						}]
+					},
+					options: {
+						scales: {
+							y: { min: 0, max: 100, title: { display: true, text: 'Coverage (%)' } },
+							x: { title: { display: true, text: 'Datum (Commit)' } }
+						}
+					}
+				});
+			})
+			.catch(err => {
+				document.getElementById('chart-wrap').innerHTML =
+					'<p>Keine Coverage-Daten gefunden.</p>';
+			});
+	</script>
+</body>
+</html>

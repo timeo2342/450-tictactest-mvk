@@ -1,0 +1,101 @@
+# Auftrag 2 + 2.5: Coverage Time-Series auf GitHub Pages.
+#
+# Bei jeder Änderung auf main:
+#   1. Tests + JaCoCo laufen lassen (erzeugt jacocoTestReport.xml)
+#   2. Line Coverage (%) aus dem XML berechnen
+#   3. Historie (coverage-history.csv) auf dem gh-pages-Branch um eine Zeile ergänzen
+#   4. index.html (Chart.js) + CSV nach GitHub Pages veröffentlichen
+#
+# Ergebnis: https://timeo2342.github.io/450-tictactest-mvk/
+
+name: Coverage Time-Series (GitHub Pages)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+# Nur ein Pages-Deploy gleichzeitig.
+concurrency:
+  group: coverage-pages
+  cancel-in-progress: false
+
+jobs:
+  coverage-pages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write            # gh-pages-Branch aktualisieren
+
+    steps:
+    - name: Repository auschecken
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+
+    - name: Gradle Wrapper ausführbar machen
+      run: chmod +x gradlew
+
+    - name: Tests + Coverage-Report erzeugen
+      run: ./gradlew test jacocoTestReport
+
+    # Line Coverage (%) aus dem JaCoCo-XML berechnen.
+    - name: Coverage-Wert aus JaCoCo-XML berechnen
+      id: cov
+      run: |
+        python3 - <<'PY' >> "$GITHUB_OUTPUT"
+        import xml.etree.ElementTree as ET
+        tree = ET.parse("build/reports/jacoco/test/jacocoTestReport.xml")
+        root = tree.getroot()
+        # Der letzte <counter type="LINE"> auf Report-Ebene enthält die Gesamtsumme.
+        missed = covered = 0
+        for c in root.findall("counter"):
+            if c.get("type") == "LINE":
+                missed = int(c.get("missed"))
+                covered = int(c.get("covered"))
+        total = missed + covered
+        pct = round(covered / total * 100, 1) if total else 0.0
+        print(f"coverage={pct}")
+        PY
+
+    # Bestehende Historie vom gh-pages-Branch holen (falls vorhanden).
+    - name: Vorhandene Historie holen
+      run: |
+        mkdir -p public
+        if git ls-remote --exit-code --heads origin gh-pages; then
+          git fetch origin gh-pages
+          git worktree add gh-pages-tmp origin/gh-pages || true
+          if [ -f gh-pages-tmp/coverage-history.csv ]; then
+            cp gh-pages-tmp/coverage-history.csv public/coverage-history.csv
+          fi
+        fi
+        # Kopfzeile anlegen, falls noch keine Historie existiert.
+        if [ ! -f public/coverage-history.csv ]; then
+          echo "Datum,Commit,Coverage" > public/coverage-history.csv
+        fi
+
+    # Neue Messung anhängen (Historie bleibt erhalten).
+    - name: Neuen Coverage-Wert anhängen
+      run: |
+        DATE=$(date +%Y-%m-%d)
+        SHA=$(git rev-parse --short HEAD)
+        echo "${DATE},${SHA},${{ steps.cov.outputs.coverage }}" >> public/coverage-history.csv
+        cat public/coverage-history.csv
+
+    # Visualisierung (index.html) dazulegen.
+    - name: Seite zusammenstellen
+      run: cp docs/pages/index.html public/index.html
+
+    # Nach gh-pages veröffentlichen.
+    - name: Auf GitHub Pages veröffentlichen
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
+        publish_branch: gh-pages

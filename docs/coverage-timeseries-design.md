@@ -138,3 +138,29 @@ Liniendiagramm auf GitHub Pages.
   abbilden, nicht einzelne Experimente auf Feature-Branches.
 - **Noch keine Implementierung:** dieses Dokument beschreibt nur den Entwurf
   (gemäss Auftrag 3.1).
+
+## 6. Umsetzung (Auftrag 2.5 – implementiert)
+
+Das Design ist im Workflow `.github/workflows/coverage-pages.yml` umgesetzt.
+
+Ablauf bei jedem Push auf `main`:
+
+1. `./gradlew test jacocoTestReport` erzeugt `jacocoTestReport.xml`.
+2. Ein Python-Skript liest den `LINE`-Counter aus dem XML und berechnet die
+   Line Coverage in Prozent.
+3. Die bestehende `coverage-history.csv` wird vom `gh-pages`-Branch geholt und um
+   eine Zeile (`Datum,Commit,Coverage`) ergänzt (Historie bleibt erhalten).
+4. `docs/pages/index.html` (Chart.js) wird zusammen mit der CSV nach `gh-pages`
+   veröffentlicht (`peaceiris/actions-gh-pages`).
+
+**Ergebnis:** Die Time-Series ist unter
+`https://timeo2342.github.io/450-tictactest-mvk/` erreichbar.
+
+### Einmalige Einrichtung (GitHub Pages)
+
+Damit die Seite erreichbar wird, muss GitHub Pages einmalig konfiguriert werden:
+- Repo → **Settings → Pages**
+- **Source:** "Deploy from a branch"
+- **Branch:** `gh-pages`, Ordner `/ (root)` → Save
+
+Ab dann aktualisiert jeder Push auf `main` die Daten und die Seite automatisch.
