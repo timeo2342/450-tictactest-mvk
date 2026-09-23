@@ -2,6 +2,7 @@
 # Alpine-based image with Java 25 (Eclipse Temurin).
 # Gradle is provided by the project's Gradle Wrapper (./gradlew),
 # JUnit is pulled as a Gradle test dependency (see build.gradle).
+# CD: build & push to GHCR happens automatically on push to main (Auftrag 324).
 FROM eclipse-temurin:25-jdk-alpine
 
 # Basic tooling needed for development inside the container.
