@@ -3,7 +3,7 @@
 	// Lokale Entwicklung nutzt automatisch das neueste freigegebene Image
 	// aus der GitHub Container Registry (statt lokal aus dem Dockerfile zu bauen).
 	// Der Image-Name muss beim tatsächlichen GHCR-Pfad kleingeschrieben sein.
-	"image": "ghcr.io/timeo2342/450-tictactest-mvk-devcontainer:latest",
+	"image": "ghcr.io/timeo2342/450-tictactest-mvk-devcontainer:v1.0.6",
 	// Run as the non-root user created in the Dockerfile (UID:GID 1000:1000).
 	"remoteUser": "dev",
 	"workspaceFolder": "/workspace",

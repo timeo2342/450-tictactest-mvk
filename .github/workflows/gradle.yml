@@ -25,7 +25,7 @@ jobs:
     # Arbeitsverzeichnissen (/__w/...). Das Image nutzt sonst den non-root
     # User "dev" (siehe Dockerfile) — nur der CI-Job läuft als root.
     container:
-      image: ghcr.io/timeo2342/450-tictactest-mvk-devcontainer:latest
+      image: ghcr.io/timeo2342/450-tictactest-mvk-devcontainer:v1.0.6
       options: --user root
       credentials:
         username: ${{ github.actor }}
