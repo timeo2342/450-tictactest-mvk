@@ -15,7 +15,10 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - '.devcontainer/**'
+      # Nur das Dockerfile löst einen neuen Image-Build aus.
+      # NICHT devcontainer.json — sonst würde der Auto-PR (der die
+      # Versions-Referenz dort aktualisiert) eine Endlosschleife auslösen.
+      - '.devcontainer/Dockerfile'
   workflow_dispatch:
 
 env:
