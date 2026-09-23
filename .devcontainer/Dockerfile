@@ -3,6 +3,7 @@
 # Gradle is provided by the project's Gradle Wrapper (./gradlew),
 # JUnit is pulled as a Gradle test dependency (see build.gradle).
 # CD: build & push to GHCR happens automatically on push to main (Auftrag 324).
+# Auto-PR updates devcontainer.json + CI workflows to the concrete version.
 FROM eclipse-temurin:25-jdk-alpine
 
 # Basic tooling needed for development inside the container.
