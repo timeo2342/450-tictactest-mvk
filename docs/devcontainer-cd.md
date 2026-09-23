@@ -1,119 +1,86 @@
 # Continuous Deployment des DevContainers
 
-Auftrag 3 – Prozessdokumentation
+Prozessdokumentation (Abschluss-Auftrag 324)
 
 ## Ziel
 
 Nach automatischem Build und Push des DevContainer-Images wird dieses automatisch
-in der CI/CD-Pipeline **und** lokal verwendet. Es werden nur **freigegebene**
-Image-Versionen genutzt.
+in der CI/CD-Pipeline **und** lokal verwendet.
 
-## Versionierungs-Konzept
+## Ablauf (automatisch)
 
-Der DevContainer wird nach **Semantic Versioning** (`vMAJOR.MINOR.PATCH`) versioniert:
+1. **DevContainer wird erstellt** – Definition in `.devcontainer/Dockerfile`
+   (Alpine, Java 25, User 1000:1000).
+2. **Bei Push auf `main`** (der `.devcontainer/**` betrifft) baut der Workflow
+   `.github/workflows/devcontainer-release.yml` das Image und pusht es nach
+   `ghcr.io/timeo2342/450-tictactest-mvk-devcontainer` – getaggt mit einer
+   konkreten Version (`v1.0.<run_number>`) **und** `:latest`.
+3. **Nach erfolgreichem Push** wird automatisch ein Pull Request erstellt, der
+   **`devcontainer.json`** und **alle CI-Workflows** auf die neue Version umstellt.
 
-- **MAJOR** (`v2.0.0`): inkompatible Änderungen (z.B. Wechsel des Base-Images, neue Java-Major-Version)
-- **MINOR** (`v1.1.0`): abwärtskompatible Ergänzungen (z.B. zusätzliches Tool, neue Extension)
-- **PATCH** (`v1.0.1`): kleine Korrekturen (z.B. Bugfix im Dockerfile)
+## Versionierung
 
-Die aktuell verwendete Version steht zentral in `.devcontainer/image-version.txt`.
-
-Das Image liegt in der GitHub Container Registry unter:
+Jeder Build erhält eine eindeutige, aufsteigende Version:
 
 ```
-ghcr.io/timeo2342/450-tictactest-mvk-devcontainer
+v1.0.<github.run_number>
 ```
 
-Getaggt wird jedes Release doppelt: mit der konkreten Version (`:v1.0.0`) und mit `:latest`.
+`github.run_number` steigt bei jedem Workflow-Lauf monoton – so ist jede Version
+eindeutig und nachvollziehbar. Zusätzlich zeigt `:latest` immer auf das zuletzt
+gebaute Image.
 
-## Freigabeprozess (nur freigegebene Container werden verwendet)
+## Verwendung des Images
 
-Der Kern: **Ein Image gilt nur dann als freigegeben, wenn ein Git-Version-Tag gesetzt wurde.**
+- **CI-Jobs** (`gradle.yml`): laufen direkt im Image aus GHCR
+  (`container.image`). Der Auto-PR aktualisiert die Referenz auf die neue Version.
+- **Lokale Entwicklung** (`devcontainer.json`): zieht dasselbe Image aus GHCR
+  (`"image": "ghcr.io/.../...-devcontainer:..."`), statt lokal zu bauen. So haben
+  CI und alle Entwickler dieselbe Umgebung.
 
-1. Änderungen am DevContainer (Dockerfile) werden auf einem Branch entwickelt und per PR nach `main` gemergt.
-2. Erst wenn bewusst ein Tag gesetzt wird (`git tag v1.0.1 && git push origin v1.0.1`),
-   startet der Release-Workflow und baut/pusht das Image.
-3. Ein gewöhnlicher Branch-Push erzeugt **kein** freigegebenes Image.
+## Der automatische Pull Request
 
-So kann kein zufälliger oder unfertiger Stand zum offiziellen `:latest` werden –
-das Setzen des Tags ist der bewusste Freigabe-Akt.
+Nach Build & Push aktualisiert der Workflow per Suchen-und-Ersetzen jede
+Image-Referenz (`<image>:<tag>`) in `.devcontainer/` und `.github/workflows/` auf
+die neue Version und öffnet damit einen PR
+(`peter-evans/create-pull-request`). So wird der Versionswechsel als
+überprüfbarer, reviewbarer Schritt sichtbar.
 
-## Automatischer Ablauf
+## Voraussetzungen (GitHub-Einstellungen)
 
-### 1. Release des Images (`.github/workflows/devcontainer-release.yml`)
+Damit die Automatik funktioniert, unter **Settings → Actions → General →
+Workflow permissions**:
 
-Trigger: Push eines Tags `v*` (oder manuell via `workflow_dispatch`).
+- **Read and write permissions** aktiv (für Image-Push und Branch-Push)
+- **Allow GitHub Actions to create and approve pull requests** aktiv (für den Auto-PR)
 
-Schritte:
-1. Version aus dem Tag ableiten.
-2. Image aus `.devcontainer/Dockerfile` bauen.
-3. Nach `ghcr.io` pushen – getaggt mit der Version **und** `:latest`.
-4. `.devcontainer/image-version.txt` auf die neue Version setzen.
-5. **Automatisch einen Pull Request** öffnen, der die aktualisierte Version verwendet
-   (via `peter-evans/create-pull-request`).
-
-### 2. CI-Jobs nutzen automatisch die neueste Version (`.github/workflows/gradle.yml`)
-
-Der Test-Job läuft direkt im Image aus GHCR:
-
-```yaml
-container:
-  image: ghcr.io/${{ github.repository }}-devcontainer:latest
-```
-
-Da `:latest` immer auf das zuletzt freigegebene Release zeigt, nutzen alle CI-Jobs
-automatisch die neueste freigegebene Version.
-
-### 3. Lokale Entwicklung nutzt automatisch die neueste Version (`.devcontainer/devcontainer.json`)
-
-Statt lokal aus dem Dockerfile zu bauen, zieht die lokale Umgebung das fertige Image:
-
-```jsonc
-"image": "ghcr.io/timeo2342/450-tictactest-mvk-devcontainer:latest"
-```
-
-Beim "Reopen in Container" (VS Code) bzw. "Create Dev Container" (IntelliJ) wird
-automatisch die neueste freigegebene Version gezogen.
-
-## Release durchführen (Anleitung)
-
-```bash
-# 1. Änderungen am Dockerfile committen und nach main mergen
-# 2. Version-Tag setzen und pushen
-git tag v1.0.1
-git push origin v1.0.1
-```
-
-Danach läuft der Release-Workflow automatisch: Image bauen → nach GHCR pushen
-(v1.0.1 + latest) → Versions-Datei aktualisieren → automatischer PR.
-
-## Übersicht der beteiligten Dateien
+## Beteiligte Dateien
 
 | Datei | Rolle |
 |---|---|
-| `.devcontainer/Dockerfile` | Definition des Images (Alpine, Java 25, User 1000:1000) |
-| `.devcontainer/devcontainer.json` | Lokale Umgebung, zieht `:latest` aus GHCR |
-| `.devcontainer/image-version.txt` | Zentrale, freigegebene Version |
-| `.github/workflows/devcontainer-release.yml` | Baut/pusht Image bei Tag, öffnet Auto-PR |
-| `.github/workflows/gradle.yml` | CI-Tests laufen im `:latest`-Image |
+| `.devcontainer/Dockerfile` | Image-Definition (Alpine, Java 25, User 1000:1000) |
+| `.devcontainer/devcontainer.json` | Lokale Umgebung, zieht das Image aus GHCR |
+| `.github/workflows/devcontainer-release.yml` | Baut/pusht Image bei Push auf main, öffnet Auto-PR |
+| `.github/workflows/gradle.yml` | CI-Tests laufen im Image aus GHCR |
 
 ## Ablaufdiagramm
 
 ```
-Entwickler setzt Tag v1.0.1
+Push auf main (.devcontainer/** geändert)
         |
         v
 +-------------------------------------------+
-|  Release-Workflow (Trigger: tag v*)       |
+|  devcontainer-release.yml                 |
 |  1. Image bauen (Dockerfile)              |
-|  2. push ghcr.io :v1.0.1 + :latest        |
-|  3. image-version.txt aktualisieren       |
+|  2. push ghcr.io :v1.0.N + :latest        |
+|  3. Referenzen in devcontainer.json +     |
+|     allen CI-Workflows aktualisieren      |
 |  4. automatischer Pull Request            |
 +-------------------------------------------+
         |                         |
         v                         v
   ghcr.io (Registry)        Pull Request nach main
         |
-        +--> CI-Jobs (gradle.yml)  -> nutzen :latest
-        +--> Lokale Umgebung       -> nutzen :latest
+        +--> CI-Jobs (gradle.yml)  -> nutzen das Image
+        +--> Lokale Umgebung       -> nutzt das Image
 ```

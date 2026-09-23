@@ -1,22 +1,22 @@
-# Auftrag 3: Continuous Deployment des DevContainers.
-#
-# Freigabe-Mechanismus: Dieser Workflow läuft NUR, wenn ein Version-Tag
-# (z.B. v1.0.0) gesetzt wird. Ein Tag = bewusste, offizielle Freigabe.
-# Ein gewöhnlicher Branch-Push erzeugt KEIN freigegebenes Image.
+# Abschluss-Auftrag (324): Continuous Deployment des DevContainers.
 #
 # Ablauf:
-#   1. Image aus .devcontainer/Dockerfile bauen
-#   2. mit der Version (v1.0.0) UND mit :latest taggen und nach ghcr.io pushen
-#   3. die zentrale Versions-Datei aktualisieren
-#   4. automatisch einen Pull Request öffnen, der die neue Version verwendet
+#   1. DevContainer-Image wird bei Push auf main gebaut
+#   2. Image wird nach ghcr.io gepusht (konkrete Version + :latest)
+#   3. Nach erfolgreichem Push wird automatisch ein PR erstellt, der
+#      devcontainer.json UND alle CI-Workflows auf die neue Version umstellt.
+#
+# Trigger: Push auf main, der .devcontainer/** betrifft (sonst würde jeder
+# Code-Push unnötig ein neues Image bauen).
 
 name: DevContainer Release (CD)
 
 on:
   push:
-    tags:
-      - 'v*'                     # nur Version-Tags lösen eine Freigabe aus
-  workflow_dispatch:             # manuelle Freigabe möglich
+    branches: [ "main" ]
+    paths:
+      - '.devcontainer/**'
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}-devcontainer
@@ -25,16 +25,17 @@ jobs:
   release-devcontainer:
     runs-on: ubuntu-latest
     permissions:
-      contents: write            # Versions-Datei committen + Branch pushen
+      contents: write            # Branch für den PR pushen
       packages: write            # Image nach ghcr.io pushen
       pull-requests: write       # automatischen PR erstellen
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Version aus dem Tag ableiten
+    # Eindeutige, aufsteigende Version pro Build (run_number steigt monoton).
+    - name: Version bestimmen
       id: version
-      run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+      run: echo "tag=v1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
     - name: Image-Namen normalisieren (lowercase)
       id: image
@@ -47,7 +48,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    # Image bauen und mit Version + latest pushen.
+    # Image bauen und mit konkreter Version + latest pushen.
     - name: Image bauen und pushen (Version + latest)
       uses: docker/build-push-action@v6
       with:
@@ -58,12 +59,19 @@ jobs:
           ${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}
           ${{ steps.image.outputs.name }}:latest
 
-    # Zentrale Versions-Datei auf die neue Version setzen.
-    - name: Versions-Datei aktualisieren
+    # devcontainer.json UND alle CI-Workflows auf die neue Version umstellen.
+    # Ersetzt jede Referenz "<image>:<irgendein-tag>" durch die neue Version.
+    - name: Referenzen auf neue Version aktualisieren
       run: |
-        echo "${{ steps.version.outputs.tag }}" > .devcontainer/image-version.txt
+        NEW="${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}"
+        # Regex: gleicher Image-Name, beliebiger bisheriger Tag -> neue Version
+        ESC=$(echo "${{ steps.image.outputs.name }}" | sed 's/[\/&]/\\&/g')
+        find .devcontainer .github/workflows -type f \( -name '*.json' -o -name '*.yml' \) -print0 \
+          | xargs -0 sed -i -E "s#${ESC}:[A-Za-z0-9._-]+#${NEW}#g"
+        echo "Aktualisiert auf: ${NEW}"
+        grep -rn "${{ steps.image.outputs.name }}:" .devcontainer .github/workflows || true
 
-    # Automatisch einen Pull Request öffnen, der die neue Version verwendet.
+    # Automatisch einen PR mit den aktualisierten Referenzen erstellen.
     - name: Pull Request mit neuer DevContainer-Version erstellen
       uses: peter-evans/create-pull-request@v6
       with:
@@ -73,13 +81,13 @@ jobs:
         commit-message: "chore: use devcontainer image ${{ steps.version.outputs.tag }}"
         title: "chore: DevContainer-Image auf ${{ steps.version.outputs.tag }} anheben"
         body: |
-          Automatisch erstellter PR nach der Freigabe des DevContainer-Images.
+          Automatisch erstellter PR nach Build & Push des DevContainer-Images.
 
           - Neues Image: `${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}`
           - Auch verfügbar als `:latest`
 
-          Dieser PR aktualisiert `.devcontainer/image-version.txt` auf die
-          freigegebene Version.
+          Dieser PR aktualisiert **`devcontainer.json`** und **alle CI-Workflows**
+          auf die neue Version.
         labels: |
           devcontainer
           automated

@@ -1,9 +1,9 @@
 # CI-Pipeline für TicTacTest.
 #
-# Die Tests laufen im freigegebenen DevContainer-Image aus ghcr.io.
+# Die Tests laufen im DevContainer-Image aus ghcr.io.
 # Das Bauen/Pushen des Images übernimmt der Release-Workflow
-# (.github/workflows/devcontainer-release.yml), ausgelöst durch einen Version-Tag.
-# Hier wird IMMER die neueste freigegebene Version (:latest) verwendet.
+# (.github/workflows/devcontainer-release.yml) bei Push auf main.
+# Der Auto-PR aktualisiert die Image-Referenz hier auf die jeweils neue Version.
 
 name: Java CI with Gradle
 
@@ -25,7 +25,7 @@ jobs:
     # Arbeitsverzeichnissen (/__w/...). Das Image nutzt sonst den non-root
     # User "dev" (siehe Dockerfile) — nur der CI-Job läuft als root.
     container:
-      image: ghcr.io/${{ github.repository }}-devcontainer:latest
+      image: ghcr.io/timeo2342/450-tictactest-mvk-devcontainer:latest
       options: --user root
       credentials:
         username: ${{ github.actor }}
