@@ -75,7 +75,9 @@ jobs:
     - name: Pull Request mit neuer DevContainer-Version erstellen
       uses: peter-evans/create-pull-request@v6
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        # PAT mit 'workflow'-Scope: nötig, weil der Auto-PR auch Dateien unter
+        # .github/workflows/ ändert (das darf der Standard-GITHUB_TOKEN nicht).
+        token: ${{ secrets.CD_PAT }}
         branch: chore/bump-devcontainer-${{ steps.version.outputs.tag }}
         base: main
         commit-message: "chore: use devcontainer image ${{ steps.version.outputs.tag }}"
