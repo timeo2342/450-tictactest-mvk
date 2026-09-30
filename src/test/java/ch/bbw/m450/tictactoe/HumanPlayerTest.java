@@ -24,7 +24,7 @@ class HumanPlayerTest {
 
 		assertThat(winner).isEqualTo(Stone.CROSS);
 		assertThat(out.capturedString())
-				.contains("where to to put the next CROSS? (0-8): ")
+				.contains("where to put the next CROSS? (0-8): ")
 				.endsWith("...and the winner is: CROSS" + System.lineSeparator());
 	}
 
@@ -37,7 +37,7 @@ class HumanPlayerTest {
 		assertThat(new HumanPlayer().play(board, color)).isEqualTo(8);
 		assertThat(board).containsOnlyNulls();
 		assertThat(out.capturedString()).isEqualTo(TicTacToeMain.toString(board)
-				+ "where to to put the next " + color + "? (0-8): " + System.lineSeparator());
+				+ "where to put the next " + color + "? (0-8): " + System.lineSeparator());
 	}
 
 	@Test
@@ -49,7 +49,7 @@ class HumanPlayerTest {
 					.isInstanceOf(NumberFormatException.class);
 		}
 		assertThat(player.play(emptyBoard(), Stone.CROSS)).isEqualTo(4);
-		assertThat(out.capturedString().split("where to to put", -1)).hasSize(6);
+		assertThat(out.capturedString().split("where to put", -1)).hasSize(6);
 	}
 
 	@Test
@@ -60,7 +60,7 @@ class HumanPlayerTest {
 
 		assertThatThrownBy(() -> player.play(emptyBoard(), Stone.CROSS))
 				.isInstanceOf(NoSuchElementException.class);
-		assertThat(out.capturedString()).contains("where to to put the next CROSS?");
+		assertThat(out.capturedString()).contains("where to put the next CROSS?");
 	}
 
 	@Test
@@ -69,7 +69,7 @@ class HumanPlayerTest {
 		TicTacToeMain.main(new String[0]);
 
 		assertThat(out.capturedString())
-				.contains("where to to put the next CROSS? (0-8): ")
+				.contains("where to put the next CROSS? (0-8): ")
 				.endsWith("...and the winner is: CROSS" + System.lineSeparator());
 	}
 }
