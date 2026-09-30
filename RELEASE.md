@@ -93,8 +93,10 @@ Releases: https://github.com/timeo2342/450-tictactest-mvk/releases
 
 Den JAR-Anhang der gewuenschten Version herunterladen und mit
 `java -jar tictactest-VERSION.jar` starten (Java 25 erforderlich).
-Ein normales Spiel bis zum Ende spielen. Ungueltige Eingaben fuehren weiterhin
-zu einer Exception; dies ist bewusst unveraendertes Verhalten.
+Ein normales Spiel bis zum Ende spielen. In den veroeffentlichten Versionen
+`v1.0.3` und `v1.0.4` fuehren ungueltige Eingaben noch zu einer Exception.
+Der unveroeffentlichte Entwicklungsstand fragt bei Text, ungueltigen Positionen
+oder belegten Feldern erneut nach. EOF beendet weiterhin mit einer Exception.
 Mit `git rev-list -n 1 v1.0.3` laesst sich der zugehoerige Commit bestimmen.
 
 ## Zweiter Release

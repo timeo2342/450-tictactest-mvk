@@ -102,12 +102,12 @@ Testziele sind nummeriert und den konkreten Testfällen zugeordnet.
 | Z1: Gewinnerkennung | T1.1–T1.3 | Alle acht Linien für beide Farben; fehlende/falsche Steine und leere/Draw-Boards sind kein Sieg |
 | Z2: Spielablauf | T2.1–T2.4 | CROSS/CIRCLE gewinnen, Draw nach neun Zügen, Sieg am letzten Zug hat Vorrang |
 | Z3: Ungültige Spielzüge und Isolation | T3.1–T3.4 | Identische Spieler, -1/9 und belegte Felder werden abgelehnt; Spieler können das echte Board nicht verändern |
-| Z4: Ein-/Ausgabe | T4.1–T4.6 | Boarddarstellung, Eingabeaufforderung, gepufferte Züge und unveränderte Exceptions |
+| Z4: Ein-/Ausgabe | T4.1–T4.9 | Boarddarstellung, gepufferte Züge, verständliche Wiederholung ungültiger Eingaben und EOF |
 | Z5: Einfache Spieler und Farben | T5.1–T5.3 | Greedy wählt das erste freie Feld; volles Board wirft Fehler; `opponent` wechselt die Farbe |
 | Z6: Perfekter Spieler | T6.1–T6.6 | Nie verlieren bei legalen Gegnerzügen, direkte Siege/Blocks, deterministisch und ohne Seiteneffekte |
 | Z7: Generierte Daten | T7.1 | Gewinnerkennung stimmt für 1.000 Boards mit unabhängigem Oracle überein |
 | Z8: Qualitäts- und Release-Gates | T8.1–T8.4 | Feste Branch-Grenze, kein PR-Coverage-Rückgang, Mutation-Grenze und startbares Release-JAR |
-| Z9: Konsolen-E2E | E1–E11 in Abschnitt 10 | Alle Spielausgänge, Fehler- und Lastfälle, eigene Ausführung und Test-first-Korrektur |
+| Z9: Konsolen-E2E | E1–E13 in Abschnitt 10 | Alle Spielausgänge, Fehler- und Lastfälle, eigene Ausführung und Test-first-Korrektur |
 
 ## 5. Testfälle im Detail (GIVEN-WHEN-THEN)
 
@@ -189,7 +189,7 @@ Regression nicht absichtlich unbegrenzter Speicher verbraucht wird.
 
 ### 10.2 Testfälle: erwartetes und tatsächliches Verhalten
 
-Lokaler Stand nach der Korrektur am 30.09.2026: 28 E2E-Ausführungen erfolgreich,
+Lokaler Stand nach der Eingabeverbesserung am 30.09.2026: 30 E2E-Ausführungen erfolgreich,
 keine Fehler, keine übersprungenen Fälle. Die tatsächlichen Ergebnisse stammen
 aus `build/test-results/e2eTest/`, nicht aus einem behaupteten neuen GitHub-Lauf.
 
@@ -198,20 +198,24 @@ aus `build/test-results/e2eTest/`, nicht aus einem behaupteten neuen GitHub-Lauf
 | E1 | `0, 2, 4, 6` | X gewinnt; Endbrett `XOXOXOX..`; vier Aufforderungen | Entspricht Erwartung |
 | E2 | `8, 7, 3` | O gewinnt; Endbrett `OOOX...XX`; drei Aufforderungen | Entspricht Erwartung |
 | E3 | `1, 3, 4, 6, 8` | Draw; volles Endbrett `OXOXXOXOX`; fünf Aufforderungen | Zunächst Endbrett fehlend; nach Test-first-Korrektur korrekt |
-| E4 | Leerzeile, Text, Leerzeichen, Dezimalzahl, Überlauf (8 Varianten) | `NumberFormatException`; genau eine Aufforderung, kein Retry | Entspricht Erwartung |
-| E5 | `-1`, `9`, Integer-Minimum/-Maximum | `IllegalStateException`; keine Brettänderung und kein Ergebnis | Entspricht Erwartung |
-| E6 | `0, 1`: Computer hat Feld 1 bereits belegt | `IllegalStateException`; Brett bleibt `XO.......` | Entspricht Erwartung |
-| E7 | Shell-/HTML-/SQL-artiger Text, NUL, ANSI-Steuerfolge, Pfadtext (7 Varianten) | Zahlparser lehnt ab; keine erfolgreiche Spielausgabe und kein Echo des Inputs auf stdout | Entspricht Erwartung |
+| E4 | Leerzeile, Text, Leerzeichen, Dezimalzahl, Überlauf (8 Varianten), danach Siegfolge | Fehlermeldung, erneute Eingabe ohne Zugverlust, danach X-Sieg | Entspricht Erwartung |
+| E5 | `-1`, `9`, Integer-Minimum/-Maximum, danach Siegfolge | Bereichsmeldung, keine Brettänderung durch ungültigen Zug, danach X-Sieg | Entspricht Erwartung |
+| E6 | `0, 1, 0, 2, 4, 6`: beide belegten Farben erneut wählen | Zwei Belegungsmeldungen; gleicher Spieler bleibt am Zug und gewinnt | Entspricht Erwartung |
+| E7 | Shell-/HTML-/SQL-artiger Text, NUL, ANSI-Steuerfolge, Pfadtext (7 Varianten), danach Siegfolge | Fehlermeldung ohne Echo des Inputs auf stdout, danach X-Sieg | Entspricht Erwartung |
 | E8 | EOF sofort bzw. nach erstem Spielerzug (2 Fälle) | `NoSuchElementException`; kein Endlosschleifen-Retry, kein erfundenes Ergebnis | Entspricht Erwartung |
-| E9 | 1.048.576 Ziffern in einer Eingabezeile | `NumberFormatException` innerhalb von 10 s; nur erste Aufforderung | Entspricht Erwartung |
-| E10 | 100.000 ungültige Eingabezeilen | Abbruch bei erster ungültiger Zeile innerhalb von 10 s; keine Ausgabeflut | Entspricht Erwartung |
+| E9 | 1.048.576 Ziffern, danach Siegfolge | Fehlermeldung und X-Sieg innerhalb von 10 s; Ausgabe unter 4.096 Zeichen | Entspricht Erwartung |
+| E10 | 1.000 ungültige Zeilen, danach Siegfolge | Iterative Wiederholung ohne Stacküberlauf; X-Sieg innerhalb von 10 s, Ausgabe unter 512.000 Zeichen | Entspricht Erwartung |
 | E11 | X-Sieg mit danach angehängter ungültiger Eingabe | Spiel endet beim Sieg; zusätzliche Eingabe wird nicht verarbeitet | Entspricht Erwartung |
+| E12 | Siegfolge mit Leerzeichen und Tabs um Zahlen | X-Sieg ohne Fehlermeldungen | Entspricht Erwartung |
+| E13 | Text und Position 9, danach EOF | Zwei Meldungen, dann `NoSuchElementException`, kein endloser Retry | Entspricht Erwartung |
 
-Die Fehler-Exceptions bleiben absichtlich Teil des bisherigen Verhaltens.
-Es wird keine automatische Wiederholung ungültiger Eingaben eingeführt.
+Der HumanPlayer prüft seine Eingabe und fragt bei ungültigen Eingaben im selben
+Zug erneut nach. Die Spielschleife behält ihre Prüfungen für ungültige Züge
+anderer Spieler bei. EOF wird nicht als gewöhnlicher Eingabefehler wiederholt.
 Die End-to-End-Prüfungen ersetzen keinen Nachweis gegen beliebige
 Denial-of-Service-Angriffe: Eine unbegrenzt lange Eingabe kann weiterhin Speicher
 binden, und ein offener Eingabestream ohne Daten/EOF wartet auf Benutzereingabe.
+Eine endlose Folge ungültiger Zeilen kann entsprechend viele Meldungen erzeugen.
 Die Test-Timeouts sind keine neuen Produktionslimits. Diese Risiken bleiben
 ausdrücklich dokumentiert; Fuzzing und die weiteren Zusatzaufträge sind optional
 und werden nicht als umgesetzt ausgewiesen.
@@ -231,12 +235,19 @@ Endbrett plus Draw-Meldung; tatsächlich fehlte das Endbrett.
 
 **Korrektur:** Der Draw-Zweig gibt jetzt wie der Sieg-Zweig `toString(board)`
 vor dem Resultat aus. Die bestehende Integrationsassertion wurde entsprechend
-angepasst; Zugregeln und Eingabeverhalten bleiben unverändert.
+angepasst; diese erste Korrektur änderte keine Zugregeln und kein Eingabeverhalten.
 
 **Grünphase:** Derselbe E2E-Fall und anschließend die komplette E2E-Suite
-bestehen. Der gemeinsame Lauf `check e2eTest pitest` ist erfolgreich:
+bestehen. Der gemeinsame Lauf `check e2eTest pitest` war vor der separaten Eingabeverbesserung erfolgreich:
 150 bisherige Testausführungen plus 28 separate E2E-Ausführungen,
 94/94 Branches, 69/70 Zeilen und 75/75 getötete Mutanten.
+
+**Separate Eingabeverbesserung:** Verständliche Wiederholungen für ungültige
+Zahlen und belegte Felder sind anschließend im Branch `feat/friendly-console-input`
+ergänzt worden. Dieser baut auf `feat/console-e2e` auf und aktualisiert die
+E2E-Erwartungen auf das neue Verhalten. Der lokale gemeinsame Lauf besteht mit
+154 Unit-/Property-Ausführungen und 30 E2E-Ausführungen, 100/100 Branches,
+81/82 Zeilen und 83/83 getöteten Mutanten.
 
 ### 10.4 CI und Veröffentlichung
 

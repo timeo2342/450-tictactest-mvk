@@ -57,39 +57,30 @@ class TicTacToeE2ETest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"", "abc", " ", " 4", "4 ", "1.5", "2147483648", "-2147483649"})
+	@ValueSource(strings = {"", "abc", " ", "--1", "1e0", "1.5", "2147483648", "-2147483649"})
 	@StdIo
-	void main_rejectsMalformedInputWithoutRetry(String input, StdOut out) {
-		assertThatThrownBy(() -> runWithInput(input, "0", "2", "4", "6"))
-				.isInstanceOf(NumberFormatException.class);
+	void main_recoversFromMalformedInput(String input, StdOut out) {
+		runWithInput(input, "0", "2", "4", "6");
 
-		assertOnlyInitialPrompt(out);
+		assertRecoveredCrossWin(out, "Please enter a whole number from 0 to 8.", 5);
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = {"-1", "9", "2147483647", "-2147483648"})
 	@StdIo
-	void main_rejectsOutOfRangeConsoleMoves(String input, StdOut out) {
-		assertThatThrownBy(() -> runWithInput(input))
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessage("cannot play to position " + input);
+	void main_recoversFromOutOfRangeConsoleMoves(String input, StdOut out) {
+		runWithInput(input, "0", "2", "4", "6");
 
-		assertThat(out.capturedString())
-				.endsWith(TicTacToeMain.toString(emptyBoard()) + System.lineSeparator())
-				.doesNotContain("the winner is:", "it's a draw!");
-		assertPromptCount(out, 1);
+		assertRecoveredCrossWin(out, "Please choose a position from 0 to 8.", 5);
 	}
 
 	@Test
-	@StdIo({"0", "1"})
-	void main_rejectsTheComputersOccupiedCell(StdOut out) {
-		assertThatThrownBy(() -> TicTacToeMain.main(new String[0]))
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessage("cannot play to position 1");
+	@StdIo({"0", "1", "0", "2", "4", "6"})
+	void main_recoversFromOccupiedCellsWithoutLosingTheTurn(StdOut out) {
+		TicTacToeMain.main(new String[0]);
 
-		assertThat(out.capturedString())
-				.endsWith(TicTacToeMain.toString(boardOf("XO.......")) + System.lineSeparator())
-				.doesNotContain("the winner is:", "it's a draw!");
+		assertRecoveredCrossWin(out, "That position is already occupied.", 6);
+		assertThat(out.capturedString().split("That position is already occupied.", -1)).hasSize(3);
 	}
 
 	@ParameterizedTest(name = "malicious input case {index}")
@@ -97,10 +88,9 @@ class TicTacToeE2ETest {
 			"' OR '1'='1", "\u0000", "\033[2J", "../secret"})
 	@StdIo
 	void main_treatsMaliciousInputAsInvalidText(String input, StdOut out) {
-		assertThatThrownBy(() -> runWithInput(input))
-				.isInstanceOf(NumberFormatException.class);
+		runWithInput(input, "0", "2", "4", "6");
 
-		assertOnlyInitialPrompt(out);
+		assertRecoveredCrossWin(out, "Please enter a whole number from 0 to 8.", 5);
 		assertThat(out.capturedString()).doesNotContain(input);
 	}
 
@@ -128,19 +118,41 @@ class TicTacToeE2ETest {
 	@Test
 	@StdIo
 	void main_rejectsALargeNumericPayloadWithinTimeout(StdOut out) {
-		assertThatThrownBy(() -> runWithInput("9".repeat(1_048_576)))
-				.isInstanceOf(NumberFormatException.class);
+		runWithInput("9".repeat(1_048_576), "0", "2", "4", "6");
 
-		assertOnlyInitialPrompt(out);
+		assertRecoveredCrossWin(out, "Please enter a whole number from 0 to 8.", 5);
+		assertThat(out.capturedString().length()).isLessThan(4096);
 	}
 
 	@Test
 	@StdIo
-	void main_stopsAtTheFirstInvalidLineOfAnInputFlood(StdOut out) {
-		assertThatThrownBy(() -> runWithInput("invalid\n".repeat(100_000)))
-				.isInstanceOf(NumberFormatException.class);
+	void main_recoversFromRepeatedInvalidLinesWithoutRecursiveRetries(StdOut out) {
+		runWithInput("invalid\n".repeat(1000) + "0", "2", "4", "6");
 
-		assertOnlyInitialPrompt(out);
+		assertRecoveredCrossWin(out, "Please enter a whole number from 0 to 8.", 1004);
+		assertThat(out.capturedString().split("Please enter a whole number from 0 to 8.", -1)).hasSize(1001);
+		assertThat(out.capturedString().length()).isLessThan(512_000);
+	}
+
+	@Test
+	@StdIo({" 0 ", "\t2", "4\t", " 6"})
+	void main_acceptsWhitespaceAroundConsoleMoves(StdOut out) {
+		TicTacToeMain.main(new String[0]);
+
+		assertThat(out.capturedString()).endsWith("...and the winner is: CROSS" + System.lineSeparator())
+				.doesNotContain("Please", "occupied");
+		assertPromptCount(out, 4);
+	}
+
+	@Test
+	@StdIo({"abc", "9"})
+	void main_stopsRetryingWhenTheInputEnds(StdOut out) {
+		assertThatThrownBy(() -> TicTacToeMain.main(new String[0]))
+				.isInstanceOf(NoSuchElementException.class);
+
+		assertThat(out.capturedString()).contains("Please enter", "Please choose")
+				.doesNotContain("the winner is:", "it's a draw!");
+		assertPromptCount(out, 3);
 	}
 
 	@Test
@@ -166,5 +178,14 @@ class TicTacToeE2ETest {
 	private void assertPromptCount(StdOut out, int expected) {
 		assertThat(out.capturedString().lines().filter(line -> line.startsWith("where to put")).count())
 				.isEqualTo(expected);
+	}
+
+	private void assertRecoveredCrossWin(StdOut out, String message, int prompts) {
+		assertThat(out.capturedString())
+				.startsWith(TicTacToeMain.toString(emptyBoard()))
+				.contains(message)
+				.endsWith(TicTacToeMain.toString(boardOf("XOXOXOX.."))
+						+ "...and the winner is: CROSS" + System.lineSeparator());
+		assertPromptCount(out, prompts);
 	}
 }

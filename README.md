@@ -79,7 +79,11 @@ Gegner verwendet werden; zwei perfekte Spieler erreichen ein Unentschieden.
 
 Unter Windows: `.\gradlew.bat run` bzw. `.\gradlew.bat test`.
 `JAVA_HOME` muss auf ein vorhandenes JDK 25 zeigen.
-Ungültige Eingaben und Eingabeende brechen das Spiel weiterhin mit einer Exception ab.
+Bei Text statt einer ganzen Zahl, Zahlen außerhalb von 0–8 oder belegten Feldern
+erscheint eine verständliche Meldung. Danach darf derselbe Spieler erneut
+eingeben, ohne seinen Zug zu verlieren. Leerzeichen um die Zahl werden akzeptiert.
+Eingabeende (EOF) bricht das Spiel weiterhin mit einer Exception ab.
+Diese Verbesserung ist noch nicht in den veröffentlichten JARs enthalten.
 
 ## Releases
 

@@ -11,6 +11,13 @@ unabhaengig davon verwaltet. Ein Eintrag allein veroeffentlicht keinen Release.
   Eingaben, Eingabeende sowie grosse Eingaben mit festen Zeitlimits.
 - E2E-Ausfuehrung in `check` und den CI-Pipelines mit eigenem HTML/XML-Bericht.
 
+### Changed
+- Ungueltige Konsoleneingaben werden mit einer Meldung abgelehnt und erneut
+  abgefragt, ohne einen Spielzug zu verbrauchen. Das gilt fuer Text, Zahlen
+  ausserhalb von 0-8 und belegte Felder.
+- Leerzeichen um eine eingegebene Zahl werden akzeptiert.
+- Die E2E-Fehlerfaelle pruefen nun die Fortsetzung bis zum regulaeren Spielende.
+
 ### Fixed
 - Auch bei Unentschieden wird das vollstaendige Endbrett nach dem letzten Zug
   ausgegeben; der Fehler wurde zuerst durch einen fehlschlagenden E2E-Test belegt.

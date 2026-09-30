@@ -39,9 +39,12 @@ Pioneer übernimmt Ein-/Ausgabe-Fixtures; jqwik ergänzt generierte Daten.
 | T4.1 `TicTacToeMainTest.toString_formatsStonesFreeIndicesAndRows` | Board mit X, O und freien Feldern | Formatieren | Zeichen, freie Indizes, ANSI-Sequenzen und Zeilen stimmen exakt |
 | T4.2 `HumanPlayerTest.play_preservesBufferedMovesAcrossTurns` | Eingaben 0, 2, 4, 6 | Spiel gegen Greedy | Keine Zeile geht verloren; CROSS gewinnt |
 | T4.3 `HumanPlayerTest.play_readsMoveAndPrintsBoardAndColor` | Eingabe 8 für jede Farbe | Zug lesen | Index 8, korrektes Board und korrekte Farbe in der Aufforderung |
-| T4.4 `HumanPlayerTest.play_rejectsMalformedInputWithoutRetrying` | Text, Leerzeile, führendes Leerzeichen, Zahlenüberlauf, danach 4 | Je ein Aufruf pro Eingabe | Vier `NumberFormatException`, danach 4; kein automatischer Retry |
+| T4.4 `HumanPlayerTest.play_retriesMalformedInputUntilAValidMove` | Text, Leerzeile, Dezimalzahl, Zahlenüberlauf, danach 4 | Einen Zug lesen | Vier verständliche Fehlermeldungen, danach gültiger Zug 4; Brett unverändert |
 | T4.5 `HumanPlayerTest.play_rejectsEndOfInput` | Ein gültiger Zug, danach Eingabeende | Zweiten Zug lesen | `NoSuchElementException` |
 | T4.6 `HumanPlayerTest.main_runsTheInteractiveGameToCompletion` | Vier vorbereitete Eingaben | Echte `main`-Methode starten | Spiel läuft bis zur CROSS-Siegmeldung |
+| T4.7 `HumanPlayerTest.play_retriesOutOfRangeAndOccupiedPositionsForBothColors` | Vier ungültige Positionen, beide belegten Farben, danach freies Feld 8 | Für X und O einen Zug lesen | Bereichs-/Belegungsmeldungen, danach 8; Brett unverändert |
+| T4.8 `HumanPlayerTest.play_acceptsWhitespaceAroundTheNumber` | Leerzeichen und Tabs um 4 | Zug lesen | Zug 4 ohne Fehlermeldung |
+| T4.9 `HumanPlayerTest.play_doesNotRetryEndOfInputAfterAnInvalidLine` | Ungültige Eingabe, dann EOF | Zug lesen | Ein Retry, danach `NoSuchElementException` statt Endlosschleife |
 
 ## Z5: GreedyPlayer und Stone
 
@@ -93,7 +96,7 @@ leere Coverage-Zähler sind Fehler, keine stillschweigenden 0-%-Werte.
 
 ## Z9: Separate Konsolen-E2E-Suite
 
-`TicTacToeE2ETest` enthält 28 Ausführungen mit JUnit Pioneer und dem Tag `e2e`.
+`TicTacToeE2ETest` enthält 30 Ausführungen mit JUnit Pioneer und dem Tag `e2e`.
 Die tatsächlichen Eingaben, SOLL-/IST-Ergebnisse und der Test-first-Nachweis
 stehen in [Abschnitt 10 des Testkonzepts](TESTKONZEPT.md#10-e2e-auftrag-vom-30092026).
 Die Suite läuft über `.\gradlew.bat e2eTest` und automatisch als Teil von `check`.
