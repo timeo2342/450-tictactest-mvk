@@ -18,6 +18,8 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - uses: actions/checkout@v4
@@ -34,15 +36,15 @@ jobs:
     - name: Gradle Wrapper ausführbar machen
       run: chmod +x gradlew
 
-    # Führt die Tests aus; jacocoTestReport ist via finalizedBy angehängt
-    # und wird hier zusätzlich explizit aufgerufen, um den Report sicher zu erzeugen.
-    - name: Tests ausführen und Coverage-Report erzeugen
-      run: ./gradlew test jacocoTestReport
+    - name: Tests, 90-percent branch gate and mutation testing
+      run: ./gradlew check pitest
 
-    # Der vollständige HTML-Report wird als Artifact gespeichert.
-    - name: HTML-Coverage-Report hochladen
+    - name: Upload all test, coverage and mutation reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: jacoco-coverage-report
-        path: build/reports/jacoco/test/html
+        name: quality-reports
+        path: |
+          build/reports/
+          build/test-results/
+        if-no-files-found: error

@@ -1,11 +1,12 @@
 {
 	"name": "TicTacTest DevContainer",
-	// Lokale Entwicklung nutzt automatisch das neueste freigegebene Image
+	// Lokale Entwicklung nutzt die hier festgelegte Image-Version
 	// aus der GitHub Container Registry (statt lokal aus dem Dockerfile zu bauen).
 	// Der Image-Name muss beim tatsächlichen GHCR-Pfad kleingeschrieben sein.
 	"image": "ghcr.io/timeo2342/450-tictactest-mvk-devcontainer:v1.0.6",
 	// Run as the non-root user created in the Dockerfile (UID:GID 1000:1000).
 	"remoteUser": "dev",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 	"workspaceFolder": "/workspace",
 	"customizations": {
 		"vscode": {

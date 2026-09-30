@@ -1,6 +1,6 @@
 # Design: Coverage Time-Series auf GitHub Pages
 
-Auftrag 2 / 3.1 – Design (noch keine Implementierung)
+Auftrag 2 / 3.1 – Design mit umgesetztem Workflow (siehe Abschnitt 6)
 
 Modul 450 – TicTacTest · 2er-Gruppe
 
@@ -50,7 +50,7 @@ Datum,Commit,Coverage
 ### 2.4 Wie fügen wir neue Messwerte zu bestehenden Daten hinzu?
 
 Der Workflow (läuft auf `main`):
-1. checkt den `gh-pages`-Branch aus (dort liegt die bestehende `coverage-history.csv`),
+1. holt den `gh-pages`-Branch und liest dessen `coverage-history.csv`,
 2. liest den neuen Coverage-Wert aus dem JaCoCo-XML,
 3. **hängt eine neue Zeile an** (`Datum, Commit-SHA, Coverage`),
 4. committet und pusht die aktualisierte CSV zurück auf `gh-pages`.
@@ -82,9 +82,9 @@ erreichbar.
 
 ### 2.7 Wann wird die Seite aktualisiert?
 
-Nur **bei Änderungen auf `main`** (Trigger `push` auf `main`). Feature-Branches
-lösen keine Aktualisierung der Historie aus – die Time-Series bildet bewusst nur
-die Entwicklung von `main` ab.
+Bei Änderungen auf **`main`** (Trigger `push` auf `main`) oder bei einem manuellen
+Start auf `main`. Ein Job-Guard verhindert Veröffentlichungen von anderen Branches –
+die Time-Series bildet bewusst nur die Entwicklung von `main` ab.
 
 ## 3. Architekturdiagramm
 
@@ -98,7 +98,7 @@ die Entwicklung von `main` ab.
 |  1. ./gradlew test jacocoTestReport               |
 |        -> jacocoTestReport.xml                    |
 |  2. Coverage-Wert aus XML extrahieren             |
-|  3. gh-pages auschecken                           |
+|  3. Historie von gh-pages lesen                   |
 |  4. neue Zeile an coverage-history.csv anhaengen  |
 |  5. commit + push nach gh-pages                   |
 +---------------------------------------------------+
@@ -136,8 +136,7 @@ Liniendiagramm auf GitHub Pages.
   Produktivcode und ist der Standard-Publishing-Branch von GitHub Pages.
 - **Nur `main` aktualisiert die Historie:** die Kurve soll den Projektzustand
   abbilden, nicht einzelne Experimente auf Feature-Branches.
-- **Noch keine Implementierung:** dieses Dokument beschreibt nur den Entwurf
-  (gemäss Auftrag 3.1).
+- **Entwurf und Umsetzung:** Abschnitt 6 dokumentiert den implementierten Workflow.
 
 ## 6. Umsetzung (Auftrag 2.5 – implementiert)
 
@@ -152,6 +151,11 @@ Ablauf bei jedem Push auf `main`:
    eine Zeile (`Datum,Commit,Coverage`) ergänzt (Historie bleibt erhalten).
 4. `docs/pages/index.html` (Chart.js) wird zusammen mit der CSV nach `gh-pages`
    veröffentlicht (`peaceiris/actions-gh-pages`).
+
+Nur ein noch nicht vorhandener `gh-pages`-Branch führt zur Initialisierung einer
+neuen CSV. Git-Fehler oder eine fehlende CSV auf einem bestehenden Branch brechen
+den Lauf ab, damit keine vorhandene Historie stillschweigend ersetzt wird.
+Auch ein fehlender `LINE`-Counter im JaCoCo-Report führt zum Abbruch.
 
 **Ergebnis:** Die Time-Series ist unter
 `https://timeo2342.github.io/450-tictactest-mvk/` erreichbar.

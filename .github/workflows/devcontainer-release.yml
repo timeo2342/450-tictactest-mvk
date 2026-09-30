@@ -4,9 +4,9 @@
 #   1. DevContainer-Image wird bei Push auf main gebaut
 #   2. Image wird nach ghcr.io gepusht (konkrete Version + :latest)
 #   3. Nach erfolgreichem Push wird automatisch ein PR erstellt, der
-#      devcontainer.json UND alle CI-Workflows auf die neue Version umstellt.
+#      devcontainer.json und CI-Image-Referenzen auf die neue Version umstellt.
 #
-# Trigger: Push auf main, der .devcontainer/** betrifft (sonst würde jeder
+# Trigger: Push auf main, der .devcontainer/Dockerfile betrifft (sonst würde jeder
 # Code-Push unnötig ein neues Image bauen).
 
 name: DevContainer Release (CD)
@@ -24,8 +24,13 @@ on:
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}-devcontainer
 
+concurrency:
+  group: devcontainer-release
+  cancel-in-progress: false
+
 jobs:
   release-devcontainer:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write            # Branch für den PR pushen
@@ -35,10 +40,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # Eindeutige, aufsteigende Version pro Build (run_number steigt monoton).
+    # Auch ein Re-run bekommt einen eigenen Tag.
     - name: Version bestimmen
       id: version
-      run: echo "tag=v1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      run: echo "tag=v1.0.${{ github.run_number }}-attempt.${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
 
     - name: Image-Namen normalisieren (lowercase)
       id: image
@@ -62,7 +67,7 @@ jobs:
           ${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}
           ${{ steps.image.outputs.name }}:latest
 
-    # devcontainer.json UND alle CI-Workflows auf die neue Version umstellen.
+    # Vorhandene Image-Referenzen auf die neue Version umstellen.
     # Ersetzt jede Referenz "<image>:<irgendein-tag>" durch die neue Version.
     - name: Referenzen auf neue Version aktualisieren
       run: |
@@ -71,8 +76,9 @@ jobs:
         ESC=$(echo "${{ steps.image.outputs.name }}" | sed 's/[\/&]/\\&/g')
         find .devcontainer .github/workflows -type f \( -name '*.json' -o -name '*.yml' \) -print0 \
           | xargs -0 sed -i -E "s#${ESC}:[A-Za-z0-9._-]+#${NEW}#g"
+        echo "${{ steps.version.outputs.tag }}" > .devcontainer/image-version.txt
         echo "Aktualisiert auf: ${NEW}"
-        grep -rn "${{ steps.image.outputs.name }}:" .devcontainer .github/workflows || true
+        grep -rn "${{ steps.image.outputs.name }}:" .devcontainer .github/workflows
 
     # Automatisch einen PR mit den aktualisierten Referenzen erstellen.
     - name: Pull Request mit neuer DevContainer-Version erstellen
@@ -91,8 +97,8 @@ jobs:
           - Neues Image: `${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}`
           - Auch verfügbar als `:latest`
 
-          Dieser PR aktualisiert **`devcontainer.json`** und **alle CI-Workflows**
-          auf die neue Version.
+          Dieser PR aktualisiert **`devcontainer.json`**, **`image-version.txt`**
+          und die vorhandenen **CI-Image-Referenzen** auf die neue Version.
         labels: |
           devcontainer
           automated

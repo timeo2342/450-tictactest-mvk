@@ -22,6 +22,7 @@ concurrency:
 
 jobs:
   coverage-pages:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write            # gh-pages-Branch aktualisieren
@@ -53,14 +54,15 @@ jobs:
         import xml.etree.ElementTree as ET
         tree = ET.parse("build/reports/jacoco/test/jacocoTestReport.xml")
         root = tree.getroot()
-        # Der letzte <counter type="LINE"> auf Report-Ebene enthält die Gesamtsumme.
-        missed = covered = 0
-        for c in root.findall("counter"):
-            if c.get("type") == "LINE":
-                missed = int(c.get("missed"))
-                covered = int(c.get("covered"))
+        counter = root.find("counter[@type='LINE']")
+        if counter is None:
+            raise ValueError("JaCoCo report has no LINE counter")
+        missed = int(counter.attrib["missed"])
+        covered = int(counter.attrib["covered"])
         total = missed + covered
-        pct = round(covered / total * 100, 1) if total else 0.0
+        if total <= 0:
+            raise ValueError("JaCoCo report has no executable lines")
+        pct = round(covered / total * 100, 1)
         print(f"coverage={pct}")
         PY
 
@@ -69,14 +71,14 @@ jobs:
       run: |
         mkdir -p public
         if git ls-remote --exit-code --heads origin gh-pages; then
-          git fetch origin gh-pages
-          git worktree add gh-pages-tmp origin/gh-pages || true
-          if [ -f gh-pages-tmp/coverage-history.csv ]; then
-            cp gh-pages-tmp/coverage-history.csv public/coverage-history.csv
+          git fetch origin refs/heads/gh-pages:refs/remotes/origin/gh-pages
+          git show origin/gh-pages:coverage-history.csv > public/coverage-history.csv
+        else
+          status=$?
+          if [ "$status" -ne 2 ]; then
+            echo "Cannot read coverage history from origin (exit $status)." >&2
+            exit "$status"
           fi
-        fi
-        # Kopfzeile anlegen, falls noch keine Historie existiert.
-        if [ ! -f public/coverage-history.csv ]; then
           echo "Datum,Commit,Coverage" > public/coverage-history.csv
         fi
 
