@@ -38,11 +38,13 @@ jobs:
       run: chmod +x gradlew
 
     - name: Tests ausführen (im DevContainer-Image, Java 25)
-      run: ./gradlew test
+      run: ./gradlew check
 
     - name: Testreport hochladen
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: test-report
-        path: build/reports/tests/test
+        path: |
+          build/reports/
+          build/test-results/

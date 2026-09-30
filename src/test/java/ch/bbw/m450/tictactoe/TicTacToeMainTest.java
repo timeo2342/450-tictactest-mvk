@@ -1,133 +1,134 @@
 package ch.bbw.m450.tictactoe;
 
 import static ch.bbw.m450.tictactoe.TicTacToeFixtures.boardOf;
-import static ch.bbw.m450.tictactoe.TicTacToeFixtures.circleWinningColumn;
-import static ch.bbw.m450.tictactoe.TicTacToeFixtures.crossWinningRow;
 import static ch.bbw.m450.tictactoe.TicTacToeFixtures.emptyBoard;
+import static ch.bbw.m450.tictactoe.TicTacToeFixtures.scriptedPlayer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import ch.bbw.m450.tictactoe.TicTacToePlayer.Stone;
 import ch.bbw.m450.tictactoe.players.GreedyPlayer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junitpioneer.jupiter.StdIo;
+import org.junitpioneer.jupiter.StdOut;
 
-/**
- * Tests for the TicTacToe game logic in {@link TicTacToeMain}.
- *
- * <p>Board states are provided via {@link TicTacToeFixtures}, player
- * instances via the {@link #setUp()} fixture, so each test stays focused on
- * the GIVEN-WHEN-THEN it verifies. Parameterized tests cover many board
- * constellations at once.</p>
- */
 class TicTacToeMainTest {
 
-	// player fixtures, freshly created before each test
-	private TicTacToePlayer xPlayer;
-	private TicTacToePlayer oPlayer;
-
-	@BeforeEach
-	void setUp() {
-		xPlayer = new GreedyPlayer();
-		oPlayer = new GreedyPlayer();
+	@ParameterizedTest(name = "{0} wins for {1}")
+	@MethodSource("ch.bbw.m450.tictactoe.TicTacToeFixtures#winningBoards")
+	void isWin_detectsEveryLineForBothColors(String cells, Stone color) {
+		assertThat(TicTacToeMain.isWin(boardOf(cells), color)).isTrue();
+		assertThat(TicTacToeMain.isWin(boardOf(cells), color.opponent())).isFalse();
 	}
 
-	// --- Single-case tests ----------------------------------------------
-
-	@Test
-	void isWin_detectsWinningRow() {
-		// GIVEN a board with three crosses in the top row
-		var board = crossWinningRow();
-		// WHEN checking for a CROSS win
-		// THEN it is a win
-		assertThat(TicTacToeMain.isWin(board, Stone.CROSS)).isTrue();
+	@ParameterizedTest(name = "{0} does not win for {1}")
+	@MethodSource("ch.bbw.m450.tictactoe.TicTacToeFixtures#incompleteWinningLines")
+	void isWin_requiresAllThreeMatchingStones(String cells, Stone color) {
+		assertThat(TicTacToeMain.isWin(boardOf(cells), color)).isFalse();
 	}
 
-	@Test
-	void isWin_detectsWinningColumn() {
-		// GIVEN a board with three circles in the left column
-		var board = circleWinningColumn();
-		// WHEN checking for a CIRCLE win
-		// THEN it is a win
-		assertThat(TicTacToeMain.isWin(board, Stone.CIRCLE)).isTrue();
+	@ParameterizedTest
+	@EnumSource(Stone.class)
+	void isWin_rejectsEmptyAndDrawBoards(Stone color) {
+		assertThat(TicTacToeMain.isWin(emptyBoard(), color)).isFalse();
+		assertThat(TicTacToeMain.isWin(boardOf("XOXXOOOXX"), color)).isFalse();
 	}
 
 	@Test
-	void isWin_returnsFalseForEmptyBoard() {
-		// GIVEN a completely empty board
-		var board = emptyBoard();
-		// WHEN checking for any win
-		// THEN neither color wins
-		assertThat(TicTacToeMain.isWin(board, Stone.CROSS)).isFalse();
-		assertThat(TicTacToeMain.isWin(board, Stone.CIRCLE)).isFalse();
+	@StdIo
+	void play_twoGreedyPlayersResultInCrossWinner(StdOut out) {
+		assertThat(TicTacToeMain.play(new GreedyPlayer(), new GreedyPlayer())).isEqualTo(Stone.CROSS);
+		assertThat(out.capturedString()).isEqualTo(TicTacToeMain.toString(boardOf("XOXOXOX.."))
+				+ "...and the winner is: CROSS" + System.lineSeparator());
 	}
 
 	@Test
-	void play_twoGreedyPlayersResultInCrossWinner() {
-		// GIVEN two greedy players (both always play the top-most free field)
-		// WHEN a full game is played
-		var winner = TicTacToeMain.play(xPlayer, oPlayer);
-		// THEN the starting player (CROSS) wins
-		assertThat(winner).isEqualTo(Stone.CROSS);
+	@StdIo
+	void play_circleCanWinAndStopsImmediately(StdOut out) {
+		assertThat(TicTacToeMain.play(scriptedPlayer(0, 1, 8), scriptedPlayer(3, 4, 5)))
+				.isEqualTo(Stone.CIRCLE);
+		assertThat(out.capturedString()).isEqualTo(TicTacToeMain.toString(boardOf("XX.OOO..X"))
+				+ "...and the winner is: CIRCLE" + System.lineSeparator());
+	}
+
+	@Test
+	@StdIo
+	void play_drawUsesAllNineMoves(StdOut out) {
+		assertThat(TicTacToeMain.play(scriptedPlayer(0, 2, 3, 7, 8), scriptedPlayer(1, 4, 5, 6)))
+				.isNull();
+		assertThat(out.capturedString()).isEqualTo("it's a draw!" + System.lineSeparator());
+	}
+
+	@Test
+	@StdIo
+	void play_aWinOnTheLastMoveIsNotADraw(StdOut out) {
+		assertThat(TicTacToeMain.play(scriptedPlayer(0, 2, 3, 7, 6), scriptedPlayer(1, 4, 5, 8)))
+				.isEqualTo(Stone.CROSS);
+		assertThat(out.capturedString()).endsWith("...and the winner is: CROSS" + System.lineSeparator())
+				.doesNotContain("draw");
 	}
 
 	@Test
 	void play_rejectsIdenticalPlayers() {
-		// GIVEN a single player instance used for both sides
-		// WHEN starting a game with the same instance twice
-		// THEN an IllegalArgumentException is thrown
-		assertThatThrownBy(() -> TicTacToeMain.play(xPlayer, xPlayer))
+		var player = new GreedyPlayer();
+		assertThatThrownBy(() -> TicTacToeMain.play(player, player))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("players must differ");
+				.hasMessage("players must differ");
 	}
 
-	// --- Parameterized tests --------------------------------------------
-
-	/**
-	 * GIVEN various boards where CROSS has three in a line (row, column, diagonal)
-	 * WHEN checking isWin for the expected winner
-	 * THEN every constellation is detected as a win.
-	 */
-	@ParameterizedTest(name = "board \"{0}\" is a win for {1}")
-	@MethodSource("ch.bbw.m450.tictactoe.TicTacToeFixtures#winningBoardsForCross")
-	void isWin_detectsAllWinningConstellations(String boardString, Stone expectedWinner) {
-		var board = boardOf(boardString);
-		assertThat(TicTacToeMain.isWin(board, expectedWinner)).isTrue();
+	@ParameterizedTest
+	@ValueSource(ints = {-1, 9})
+	@StdIo
+	void play_rejectsOutOfBoundsMoves(int move, StdOut out) {
+		assertThatThrownBy(() -> TicTacToeMain.play(scriptedPlayer(move), new GreedyPlayer()))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("cannot play to position " + move);
+		assertThat(out.capturedString()).isEqualTo(TicTacToeMain.toString(emptyBoard()) + System.lineSeparator());
 	}
 
-	/**
-	 * GIVEN boards that are NOT a win for the checked color
-	 * WHEN checking isWin
-	 * THEN the result is false for each constellation.
-	 */
-	@ParameterizedTest(name = "board \"{0}\" is not a win for {1}")
-	@MethodSource("ch.bbw.m450.tictactoe.TicTacToeFixtures#nonWinningBoards")
-	void isWin_returnsFalseForNonWinningConstellations(String boardString, Stone color) {
-		var board = boardOf(boardString);
-		assertThat(TicTacToeMain.isWin(board, color)).isFalse();
+	@Test
+	@StdIo
+	void play_rejectsOccupiedMoves(StdOut out) {
+		assertThatThrownBy(() -> TicTacToeMain.play(scriptedPlayer(0), scriptedPlayer(0)))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("cannot play to position 0");
+		assertThat(out.capturedString()).isEqualTo(TicTacToeMain.toString(boardOf("X........"))
+				+ System.lineSeparator());
 	}
 
-	/**
-	 * GIVEN a single winning line described inline as CSV
-	 * WHEN checking isWin for CROSS
-	 * THEN each of the eight winning lines is detected.
-	 */
-	@ParameterizedTest(name = "line \"{0}\" wins for CROSS")
-	@CsvSource({
-			"XXX......",
-			"...XXX...",
-			"......XXX",
-			"X..X..X..",
-			".X..X..X.",
-			"..X..X..X",
-			"X...X...X",
-			"..X.X.X.."
-	})
-	void isWin_detectsEachWinningLineForCross(String boardString) {
-		var board = boardOf(boardString);
-		assertThat(TicTacToeMain.isWin(board, Stone.CROSS)).isTrue();
+	@Test
+	@StdIo
+	void play_givesEachPlayerAFreshSnapshotAndProtectsTheBoard(StdOut out) {
+		var snapshots = new String[] {".........", "X........", "X..O.....", "XX.O.....", "XX.OO...."};
+		var moves = new int[] {0, 3, 1, 4, 2};
+		var round = new AtomicInteger();
+		TicTacToePlayer corruptingPlayer = (board, color) -> {
+			var turn = round.getAndIncrement();
+			assertThat(board).containsExactly(boardOf(snapshots[turn]));
+			assertThat(color).isEqualTo(turn % 2 == 0 ? Stone.CROSS : Stone.CIRCLE);
+			Arrays.fill(board, color.opponent());
+			return moves[turn];
+		};
+		TicTacToePlayer otherPlayer = (board, color) -> corruptingPlayer.play(board, color);
+
+		assertThat(TicTacToeMain.play(corruptingPlayer, otherPlayer)).isEqualTo(Stone.CROSS);
+		assertThat(round.get()).isEqualTo(5);
+		assertThat(out.capturedString()).isEqualTo(TicTacToeMain.toString(boardOf("XXXOO...."))
+				+ "...and the winner is: CROSS" + System.lineSeparator());
+	}
+
+	@Test
+	void toString_formatsStonesFreeIndicesAndRows() {
+		assertThat(TicTacToeMain.toString(boardOf("XO......."))).isEqualTo(
+				"\033[1mX\033[0m  \033[1mO\033[0m  \033[37m2\033[0m  \n"
+						+ "\033[37m3\033[0m  \033[37m4\033[0m  \033[37m5\033[0m  \n"
+						+ "\033[37m6\033[0m  \033[37m7\033[0m  \033[37m8\033[0m  \n");
 	}
 }

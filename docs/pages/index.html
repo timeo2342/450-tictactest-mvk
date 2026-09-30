@@ -22,7 +22,10 @@
 	<script>
 		// CSV laden und als Liniendiagramm zeichnen.
 		fetch('coverage-history.csv')
-			.then(r => r.text())
+			.then(r => {
+				if (!r.ok) throw new Error('Coverage-Daten konnten nicht geladen werden: ' + r.status);
+				return r.text();
+			})
 			.then(text => {
 				const rows = text.trim().split('\n').slice(1); // Kopfzeile entfernen
 				const labels = [];
