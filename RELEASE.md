@@ -2,11 +2,23 @@
 
 ## Aktueller Umsetzungsstand
 
-Build und Workflow sind vorbereitet. Die Veroeffentlichung erfolgt im bestehenden
-Repository `timeo2342/450-tictactest-mvk`; ein neues Repository wird nicht angelegt.
-Zwei Releases mit unterschiedlichen Code-Staenden und startbaren JAR-Anhaengen
-sind Teil der Abnahme. Die private Abgabe ist separat mit der Lehrperson zu
-klaeren, weil das bestehende Repository ein oeffentlicher Fork ist.
+Die Versionen `v1.0.3` und `v1.0.4` sind im bestehenden Repository
+`timeo2342/450-tictactest-mvk` mit startbaren JAR-Anhaengen veroeffentlicht.
+Beide Dateien wurden nach der Veroeffentlichung heruntergeladen und mit einem
+vollstaendigen Spiel ausgefuehrt. Es wurde kein neues Repository angelegt.
+Die private Abgabe ist separat mit der Lehrperson zu klaeren, weil das bestehende
+Repository ein oeffentlicher Fork ist.
+
+| Version | Commit | Release-Workflow |
+|---------|--------|------------------|
+| [v1.0.3](https://github.com/timeo2342/450-tictactest-mvk/releases/tag/v1.0.3) | `bf5eae140b51bcbb17ee04efc5e9cff3eaeb58bb` | [36680240117](https://github.com/timeo2342/450-tictactest-mvk/actions/runs/36680240117) |
+| [v1.0.4](https://github.com/timeo2342/450-tictactest-mvk/releases/tag/v1.0.4) | `ded430016f36362f1c18e7a059189c3451f95a0d` | [36680537271](https://github.com/timeo2342/450-tictactest-mvk/actions/runs/36680537271) |
+
+Die SHA-256-Werte der heruntergeladenen Dateien stimmen mit den
+GitHub-Asset-Digests ueberein:
+
+- `tictactest-1.0.3.jar`: `3a066e92ba315170ffa0f0ed4576d7ceee4ec094d38d77e849dc2674e321d0c7`
+- `tictactest-1.0.4.jar`: `59fb4755b534bebe7b1f7ead73c62d38a574a4ff1f6b0ea08a34b5a67d9a7637`
 
 ## Freigabe und Versionierung
 
@@ -36,14 +48,18 @@ ausdruecklich `Keine.` enthalten. Das Changelog ist keine rohe Commit-Liste.
 
 ## Release erstellen (PowerShell)
 
+Beispiel fuer den naechsten Release `1.0.5`: zuvor den zugehoerigen datierten
+Changelog-Eintrag und die gewuenschten Aenderungen ueber einen PR integrieren.
+Die bereits veroeffentlichten Tags nicht erneut erzeugen.
+
 ```powershell
 git switch main
 git pull --ff-only
 git status --short
-.\gradlew.bat clean check pitest jar "-PreleaseVersion=1.0.3"
-java -jar .\build\libs\tictactest-1.0.3.jar
-git tag -a v1.0.3 -m "Release v1.0.3"
-git push origin v1.0.3
+.\gradlew.bat clean check pitest jar "-PreleaseVersion=1.0.5"
+java -jar .\build\libs\tictactest-1.0.5.jar
+git tag -a v1.0.5 -m "Release v1.0.5"
+git push origin v1.0.5
 ```
 
 `git status --short` muss vor dem Tag leer sein. Neue Code-/Changelog-Aenderungen
@@ -83,11 +99,11 @@ Mit `git rev-list -n 1 v1.0.3` laesst sich der zugehoerige Commit bestimmen.
 
 ## Zweiter Release
 
-Nach dem ersten Release eine kleine tatsaechliche Aenderung vornehmen, zum Beispiel
-eine Korrektur der Eingabeaufforderung. Einen neuen Changelog-Eintrag fuer `1.0.4`
-mit dem tatsaechlichen Freigabedatum ergaenzen, committen/reviewen und die Schritte
-mit `1.0.4` wiederholen. Die beiden Tags muessen auf unterschiedliche Staende
-zeigen und beide Releases einen herunterladbaren, startbaren JAR-Anhang besitzen.
+Der zweite Release `v1.0.4` korrigiert die Eingabeaufforderung von
+"where to to put" zu "where to put". Die zugehoerigen Regressionen und der
+Changelog wurden in [PR #12](https://github.com/timeo2342/450-tictactest-mvk/pull/12)
+angepasst. Die Tags zeigen auf unterschiedliche Commits; auch die
+heruntergeladenen JAR-Dateien unterscheiden sich tatsaechlich.
 
 ## Externe Voraussetzungen
 

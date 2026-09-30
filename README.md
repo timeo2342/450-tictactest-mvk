@@ -75,14 +75,15 @@ Ungültige Eingaben und Eingabeende brechen das Spiel weiterhin mit einer Except
 ## Releases
 
 ```powershell
-.\gradlew.bat clean check pitest jar "-PreleaseVersion=1.0.3"
-java -jar .\build\libs\tictactest-1.0.3.jar
+.\gradlew.bat clean check pitest jar "-PreleaseVersion=1.0.4"
+java -jar .\build\libs\tictactest-1.0.4.jar
 ```
 
 Der [Release-Prozess](RELEASE.md) beschreibt Freigabe, semantische Versionierung
 und Git-Tags. Nur ein Release-Tag startet die Veröffentlichung der Anwendung;
 ein Push auf `main` reicht nicht. Änderungen stehen im [Changelog](CHANGELOG.md).
 Veröffentlichte JARs: https://github.com/timeo2342/450-tictactest-mvk/releases
+`v1.0.3` und `v1.0.4` sind mit jeweils eigenem Code-Stand und JAR-Anhang verfügbar.
 
 ## CI-Gates
 
@@ -93,3 +94,11 @@ PASS/FAIL stehen im Workflow-Log und in der Job-Zusammenfassung. Der Vergleich
 läuft nur für Pull Requests auf `main` oder bei manueller Ausführung.
 Die [Coverage-Zeitreihe](https://timeo2342.github.io/450-tictactest-mvk/)
 zeigt die Entwicklung auf `main`.
+
+Die GitHub-Branch-Regeln verlangen die Jobs `compare`, `coverage` und `test`
+vor jedem Merge nach `main`, auch für Administratoren.
+Der Implementierungs-PR für die Abgabe ist
+[#11](https://github.com/timeo2342/450-tictactest-mvk/pull/11);
+`bernedom` wurde als Reviewer angefragt. Die Teams-Abgabe des Links und die
+Abstimmung zur geforderten privaten Bereitstellung bleiben beim
+Projektverantwortlichen; dieses bestehende Repository ist ein öffentlicher Fork.
