@@ -1,6 +1,6 @@
 # TicTacToe – Testdokumentation
 
-Die Ziele Z1 bis Z8 stehen im [Testkonzept](TESTKONZEPT.md).
+Die Ziele Z1 bis Z9 stehen im [Testkonzept](TESTKONZEPT.md).
 Alle Testklassen liegen unter `src/test/java/ch/bbw/m450/tictactoe/`.
 `TicTacToeFixtures` stellt frische Boards, Argument-Provider und geskriptete
 Spieler bereit. AssertJ prüft Werte, Arrays, Ausgabe und genaue Exceptions.
@@ -20,7 +20,7 @@ Pioneer übernimmt Ein-/Ausgabe-Fixtures; jqwik ergänzt generierte Daten.
 |--------------|-------|------|------|
 | T2.1 `play_twoGreedyPlayersResultInCrossWinner` | Zwei GreedyPlayer | Vollständiges Spiel | CROSS gewinnt über 2–4–6; Endboard und Siegmeldung stimmen |
 | T2.2 `play_circleCanWinAndStopsImmediately` | Geskriptete Züge | O vervollständigt 3–4–5 | CIRCLE gewinnt; kein weiterer Zug wird verlangt |
-| T2.3 `play_drawUsesAllNineMoves` | Neun Züge ohne Gewinnlinie | Spiel durchführen | Rückgabe `null`, Ausgabe `it's a draw!` |
+| T2.3 `play_drawUsesAllNineMoves` | Neun Züge ohne Gewinnlinie | Spiel durchführen | Rückgabe `null`, vollständiges Endbrett und `it's a draw!` |
 | T2.4 `play_aWinOnTheLastMoveIsNotADraw` | Sieg erst am neunten Zug | Spiel durchführen | CROSS-Sieg, keine Draw-Meldung |
 
 ## Z3: Fehlerfälle und Isolation (`TicTacToeMainTest`)
@@ -39,9 +39,12 @@ Pioneer übernimmt Ein-/Ausgabe-Fixtures; jqwik ergänzt generierte Daten.
 | T4.1 `TicTacToeMainTest.toString_formatsStonesFreeIndicesAndRows` | Board mit X, O und freien Feldern | Formatieren | Zeichen, freie Indizes, ANSI-Sequenzen und Zeilen stimmen exakt |
 | T4.2 `HumanPlayerTest.play_preservesBufferedMovesAcrossTurns` | Eingaben 0, 2, 4, 6 | Spiel gegen Greedy | Keine Zeile geht verloren; CROSS gewinnt |
 | T4.3 `HumanPlayerTest.play_readsMoveAndPrintsBoardAndColor` | Eingabe 8 für jede Farbe | Zug lesen | Index 8, korrektes Board und korrekte Farbe in der Aufforderung |
-| T4.4 `HumanPlayerTest.play_rejectsMalformedInputWithoutRetrying` | Text, Leerzeile, führendes Leerzeichen, Zahlenüberlauf, danach 4 | Je ein Aufruf pro Eingabe | Vier `NumberFormatException`, danach 4; kein automatischer Retry |
+| T4.4 `HumanPlayerTest.play_retriesMalformedInputUntilAValidMove` | Text, Leerzeile, Dezimalzahl, Zahlenüberlauf, danach 4 | Einen Zug lesen | Vier verständliche Fehlermeldungen, danach gültiger Zug 4; Brett unverändert |
 | T4.5 `HumanPlayerTest.play_rejectsEndOfInput` | Ein gültiger Zug, danach Eingabeende | Zweiten Zug lesen | `NoSuchElementException` |
 | T4.6 `HumanPlayerTest.main_runsTheInteractiveGameToCompletion` | Vier vorbereitete Eingaben | Echte `main`-Methode starten | Spiel läuft bis zur CROSS-Siegmeldung |
+| T4.7 `HumanPlayerTest.play_retriesOutOfRangeAndOccupiedPositionsForBothColors` | Vier ungültige Positionen, beide belegten Farben, danach freies Feld 8 | Für X und O einen Zug lesen | Bereichs-/Belegungsmeldungen, danach 8; Brett unverändert |
+| T4.8 `HumanPlayerTest.play_acceptsWhitespaceAroundTheNumber` | Leerzeichen und Tabs um 4 | Zug lesen | Zug 4 ohne Fehlermeldung |
+| T4.9 `HumanPlayerTest.play_doesNotRetryEndOfInputAfterAnInvalidLine` | Ungültige Eingabe, dann EOF | Zug lesen | Ein Retry, danach `NoSuchElementException` statt Endlosschleife |
 
 ## Z5: GreedyPlayer und Stone
 
@@ -91,15 +94,25 @@ eine unabhängige Ergänzung.
 Das PR-Gate vergleicht Brüche ohne vorherige Rundung. Fehlende, ungültige oder
 leere Coverage-Zähler sind Fehler, keine stillschweigenden 0-%-Werte.
 
+## Z9: Separate Konsolen-E2E-Suite
+
+`TicTacToeE2ETest` enthält 30 Ausführungen mit JUnit Pioneer und dem Tag `e2e`.
+Die tatsächlichen Eingaben, SOLL-/IST-Ergebnisse und der Test-first-Nachweis
+stehen in [Abschnitt 10 des Testkonzepts](TESTKONZEPT.md#10-e2e-auftrag-vom-30092026).
+Die Suite läuft über `.\gradlew.bat e2eTest` und automatisch als Teil von `check`.
+Alle Fälle haben zehn Sekunden Timeout; der Task zusätzlich zwei Minuten.
+PITest schließt diese E2E-Klasse aus und verwendet weiterhin die
+Unit-/Integrationsfälle. Die E2E-Ausführungen werden nicht doppelt in `test` gezählt.
+
 ## Ausführung und Nachweise
 
 ```powershell
 .\gradlew.bat check pitest
 ```
 
-HTML-Berichte: `build/reports/tests/test/index.html`,
+HTML-Berichte: `build/reports/tests/test/index.html`, `build/reports/tests/e2eTest/index.html`,
 `build/reports/jacoco/test/html/index.html`, `build/reports/pitest/index.html`.
-XML-Ergebnisse stehen unter `build/test-results/test/` sowie neben den
+XML-Ergebnisse stehen unter `build/test-results/test/`, `build/test-results/e2eTest/` sowie neben den
 Coverage-/Mutation-Berichten. GitHub Actions lädt die erzeugten Reports als
 Artefakte hoch. Erfolgreiche lokale Läufe sind keine Behauptung, dass ein
 Release, ein externer Review oder die Teams-Abgabe schon erfolgt ist.
