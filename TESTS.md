@@ -119,6 +119,24 @@ Microsoft OpenJDK 25.0.2 und Gradle 9.1.0 unter Windows.
 | Reproduzierbarkeit | Erneute Kompilierung und Archivierung mit gleicher Version ergeben identisches SHA-256 |
 | PR-Vergleichsskript | Gleichheit/Verbesserung akzeptiert; kleinster Rückgang sowie fehlende, negative oder leere Zähler abgelehnt |
 
-Die Reports beschreiben diesen Arbeitsstand, nicht den unveränderten Stand auf
-GitHub. Veröffentlichung, Download eines echten Release-Anhangs und Container-CI
-müssen nach Übernahme der Änderungen noch auf GitHub durchlaufen werden.
+Diese lokalen Reports beschreiben den damaligen Arbeitsstand. Die nachfolgende
+Veröffentlichung ist separat durch die GitHub-Läufe belegt.
+
+### GitHub-Abnahme vom 30.09.2026
+
+Die Implementierung wurde über [PR #11](https://github.com/timeo2342/450-tictactest-mvk/pull/11)
+integriert. Qualitäts-CI, Container-CI und relativer Coverage-Vergleich waren
+erfolgreich. Dasselbe gilt für die Eingabekorrektur in
+[PR #12](https://github.com/timeo2342/450-tictactest-mvk/pull/12).
+
+Die Release-Läufe und beide tatsächlich heruntergeladenen JARs sind mit
+Commit-SHA und Datei-Hash in [RELEASE.md](RELEASE.md) dokumentiert.
+Beide Downloads liefen bis zur CROSS-Siegmeldung; `v1.0.4` zeigt dabei die
+korrigierte Eingabeaufforderung.
+
+Der [DevContainer-CD-Lauf](https://github.com/timeo2342/450-tictactest-mvk/actions/runs/36680393172)
+hat das Image `v1.0.7-attempt.1` veröffentlicht und selbständig
+[PR #13](https://github.com/timeo2342/450-tictactest-mvk/pull/13) erstellt.
+Dessen Container-CI war erfolgreich; die Image-Referenzen sind auf `main`
+übernommen. Ein menschlicher Lehrerreview und die Teams-Abgabe werden dadurch
+nicht ersetzt.
