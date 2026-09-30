@@ -3,6 +3,18 @@
 Benutzerrelevante Aenderungen der Anwendung. DevContainer-Versionen werden
 unabhaengig davon verwaltet. Ein Eintrag allein veroeffentlicht keinen Release.
 
+## [1.0.4] - 2026-09-30
+
+### Added
+- Keine.
+
+### Changed
+- Die lokalen Snapshot-Builds verwenden die Versionsnummer `1.0.4-SNAPSHOT`.
+
+### Fixed
+- Die Eingabeaufforderung zeigt "where to put" statt "where to to put".
+- Die Ein-/Ausgabe-Assertions sichern die korrigierte Aufforderung fuer beide Farben ab.
+
 ## [1.0.3] - 2026-09-30
 
 ### Added
