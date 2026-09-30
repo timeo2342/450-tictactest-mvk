@@ -87,7 +87,7 @@ public class TicTacToeMain {
 			}
 			currentPlayer = currentPlayer == xPlayer ? oPlayer : xPlayer;
 		}
-		System.out.println("it's a draw!");
+		System.out.println(toString(board) + "it's a draw!");
 		return null;
 	}
 

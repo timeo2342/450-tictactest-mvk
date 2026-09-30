@@ -40,13 +40,32 @@ dependencies {
 }
 
 test {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'e2e'
+	}
 	systemProperty 'jqwik.database', layout.buildDirectory.file('jqwik-database').get().asFile.absolutePath
 	testLogging {
 		events "passed", "skipped", "failed"
 	}
 	// Nach den Tests immer den JaCoCo-Report erzeugen.
 	finalizedBy jacocoTestReport
+}
+
+def e2eTest = tasks.register('e2eTest', Test) {
+	description = 'Runs complete console games and adversarial input cases with JUnit Pioneer.'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform {
+		includeTags 'e2e'
+	}
+	systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
+	systemProperty 'junit.jupiter.execution.timeout.mode', 'enabled'
+	timeout = java.time.Duration.ofMinutes(2)
+	shouldRunAfter test
+	testLogging {
+		events 'passed', 'skipped', 'failed'
+	}
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {
@@ -70,7 +89,8 @@ jacoco {
 
 jacocoTestReport {
 	// Der Report braucht die Testergebnisse.
-	dependsOn test
+	dependsOn test, e2eTest
+	executionData tasks.withType(Test)
 	reports {
 		html.required = true   // HTML-Report (für Artifact / Ansicht)
 		xml.required = true    // XML-Report (für spätere Auswertung / Coverage-Gate)
@@ -79,7 +99,8 @@ jacocoTestReport {
 }
 
 jacocoTestCoverageVerification {
-	dependsOn test
+	dependsOn test, e2eTest
+	executionData tasks.withType(Test)
 	violationRules {
 		rule {
 			limit {
@@ -92,15 +113,16 @@ jacocoTestCoverageVerification {
 }
 
 tasks.named('check') {
-	dependsOn jacocoTestCoverageVerification
+	dependsOn jacocoTestCoverageVerification, e2eTest
 }
 
 pitest {
 	pitestVersion = '1.30.0'
 	junit5PluginVersion = '1.2.3'
 	targetClasses = ['ch.bbw.m450.tictactoe.*']
-	// jqwik properties run in test/check; PIT uses deterministic Jupiter tests.
+	// Property and E2E tests run separately; PIT mutates against the unit/integration suite.
 	targetTests = ['ch.bbw.m450.tictactoe.*Test']
+	excludedTestClasses = ['ch.bbw.m450.tictactoe.TicTacToeE2ETest']
 	outputFormats = ['HTML', 'XML']
 	timestampedReports = false
 	threads = 2

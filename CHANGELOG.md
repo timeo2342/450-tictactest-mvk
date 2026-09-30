@@ -3,6 +3,18 @@
 Benutzerrelevante Aenderungen der Anwendung. DevContainer-Versionen werden
 unabhaengig davon verwaltet. Ein Eintrag allein veroeffentlicht keinen Release.
 
+## [Unreleased]
+
+### Added
+- Eigener Gradle-Task `e2eTest` fuer vollstaendige Konsolenspiele mit JUnit Pioneer.
+- E2E-Faelle fuer Siege beider Farben, Unentschieden, fehlerhafte und boeswillige
+  Eingaben, Eingabeende sowie grosse Eingaben mit festen Zeitlimits.
+- E2E-Ausfuehrung in `check` und den CI-Pipelines mit eigenem HTML/XML-Bericht.
+
+### Fixed
+- Auch bei Unentschieden wird das vollstaendige Endbrett nach dem letzten Zug
+  ausgegeben; der Fehler wurde zuerst durch einen fehlschlagenden E2E-Test belegt.
+
 ## [1.0.4] - 2026-09-30
 
 ### Added

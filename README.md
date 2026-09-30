@@ -39,6 +39,7 @@ die gleiche Umgebung haben.
 
 - Test-Code: `src/test/java/ch/bbw/m450/tictactoe`
 - Ausführen (lokal oder im Container): `./gradlew test`
+- Nur Konsolen-E2E-Tests: `./gradlew e2eTest` (Windows: `.\gradlew.bat e2eTest`)
 - Qualitätsprüfung inklusive mindestens 90 % Branch-Coverage: `./gradlew check`
 - Mutation Testing: `./gradlew pitest`
 - Ausführliche Testdokumentation (GIVEN-WHEN-THEN): siehe [`TESTS.md`](TESTS.md)
@@ -49,7 +50,15 @@ Tests. JUnit Pioneer prüft Ein-/Ausgaben; jqwik ergänzt Property-Tests.
 JaCoCo misst die Abdeckung aller Produktionsklassen, PITest prüft die
 Fehlererkennung der Tests durch Mutationen.
 
-Reports liegen unter `build/reports/tests/test/`, `build/reports/jacoco/test/`
+Die E2E-Suite ruft den echten Konsoleneinstieg mit Pioneer-Eingaben auf:
+Sieg X, Sieg O, Unentschieden, ungültige/böswillige Eingaben und Lastfälle.
+Jeder E2E-Fall hat ein Timeout von zehn Sekunden; der Gradle-Task ist zusätzlich
+auf zwei Minuten begrenzt. `check` bindet die Suite automatisch ein.
+`test` selbst enthält keine E2E-Fälle; sein abschließender gemeinsamer
+JaCoCo-Report führt bei Bedarf auch `e2eTest` aus.
+PITest verwendet weiterhin die Unit-/Integrationssuite, nicht die E2E-Lastfälle.
+
+Reports liegen unter `build/reports/tests/test/`, `build/reports/tests/e2eTest/`, `build/reports/jacoco/test/`
 und `build/reports/pitest/`. Die Qualitäts-CI lädt die erzeugten Reports auch bei
 einem fehlgeschlagenen Lauf als Artefakt hoch.
 

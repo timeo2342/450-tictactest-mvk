@@ -1,6 +1,6 @@
 # TicTacToe – Testdokumentation
 
-Die Ziele Z1 bis Z8 stehen im [Testkonzept](TESTKONZEPT.md).
+Die Ziele Z1 bis Z9 stehen im [Testkonzept](TESTKONZEPT.md).
 Alle Testklassen liegen unter `src/test/java/ch/bbw/m450/tictactoe/`.
 `TicTacToeFixtures` stellt frische Boards, Argument-Provider und geskriptete
 Spieler bereit. AssertJ prüft Werte, Arrays, Ausgabe und genaue Exceptions.
@@ -20,7 +20,7 @@ Pioneer übernimmt Ein-/Ausgabe-Fixtures; jqwik ergänzt generierte Daten.
 |--------------|-------|------|------|
 | T2.1 `play_twoGreedyPlayersResultInCrossWinner` | Zwei GreedyPlayer | Vollständiges Spiel | CROSS gewinnt über 2–4–6; Endboard und Siegmeldung stimmen |
 | T2.2 `play_circleCanWinAndStopsImmediately` | Geskriptete Züge | O vervollständigt 3–4–5 | CIRCLE gewinnt; kein weiterer Zug wird verlangt |
-| T2.3 `play_drawUsesAllNineMoves` | Neun Züge ohne Gewinnlinie | Spiel durchführen | Rückgabe `null`, Ausgabe `it's a draw!` |
+| T2.3 `play_drawUsesAllNineMoves` | Neun Züge ohne Gewinnlinie | Spiel durchführen | Rückgabe `null`, vollständiges Endbrett und `it's a draw!` |
 | T2.4 `play_aWinOnTheLastMoveIsNotADraw` | Sieg erst am neunten Zug | Spiel durchführen | CROSS-Sieg, keine Draw-Meldung |
 
 ## Z3: Fehlerfälle und Isolation (`TicTacToeMainTest`)
@@ -91,15 +91,25 @@ eine unabhängige Ergänzung.
 Das PR-Gate vergleicht Brüche ohne vorherige Rundung. Fehlende, ungültige oder
 leere Coverage-Zähler sind Fehler, keine stillschweigenden 0-%-Werte.
 
+## Z9: Separate Konsolen-E2E-Suite
+
+`TicTacToeE2ETest` enthält 28 Ausführungen mit JUnit Pioneer und dem Tag `e2e`.
+Die tatsächlichen Eingaben, SOLL-/IST-Ergebnisse und der Test-first-Nachweis
+stehen in [Abschnitt 10 des Testkonzepts](TESTKONZEPT.md#10-e2e-auftrag-vom-30092026).
+Die Suite läuft über `.\gradlew.bat e2eTest` und automatisch als Teil von `check`.
+Alle Fälle haben zehn Sekunden Timeout; der Task zusätzlich zwei Minuten.
+PITest schließt diese E2E-Klasse aus und verwendet weiterhin die
+Unit-/Integrationsfälle. Die E2E-Ausführungen werden nicht doppelt in `test` gezählt.
+
 ## Ausführung und Nachweise
 
 ```powershell
 .\gradlew.bat check pitest
 ```
 
-HTML-Berichte: `build/reports/tests/test/index.html`,
+HTML-Berichte: `build/reports/tests/test/index.html`, `build/reports/tests/e2eTest/index.html`,
 `build/reports/jacoco/test/html/index.html`, `build/reports/pitest/index.html`.
-XML-Ergebnisse stehen unter `build/test-results/test/` sowie neben den
+XML-Ergebnisse stehen unter `build/test-results/test/`, `build/test-results/e2eTest/` sowie neben den
 Coverage-/Mutation-Berichten. GitHub Actions lädt die erzeugten Reports als
 Artefakte hoch. Erfolgreiche lokale Läufe sind keine Behauptung, dass ein
 Release, ein externer Review oder die Teams-Abgabe schon erfolgt ist.
