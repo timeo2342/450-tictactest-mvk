@@ -23,7 +23,7 @@ Die erste regulaer veroeffentlichte Version ist mindestens `1.0.0`.
 Die bereits vorhandenen Tags `v1.0.0`, `v1.0.1` und `v1.0.2` werden nicht verschoben.
 Die neue Release-Reihe beginnt deshalb mit `v1.0.3`.
 Gradle bezieht die Version aus `-PreleaseVersion=MAJOR.MINOR.PATCH`, im Workflow
-direkt aus dem Tag. Ohne diese Property heissen lokale Builds `1.0.3-SNAPSHOT`.
+direkt aus dem Tag. Ohne diese Property heissen lokale Builds `1.0.4-SNAPSHOT`.
 
 ## Voraussetzungen
 
@@ -92,8 +92,12 @@ zeigen und beide Releases einen herunterladbaren, startbaren JAR-Anhang besitzen
 ## Externe Voraussetzungen
 
 GitHub Actions braucht `contents: write` fuer die Veroeffentlichung.
-Der Repository-Verantwortliche sollte den PR Coverage Gate und die Qualitaets-CI
-als erforderliche Checks in den Branch-Regeln hinterlegen.
+Auf `main` sind `compare` (PR Coverage Gate), `coverage` (Qualitaets-CI) und
+`test` (DevContainer-CI) als erforderliche GitHub-Actions-Checks eingerichtet.
+Der PR muss zum aktuellen `main` passen; die Regeln gelten auch fuer Administratoren.
+Direkte Pushes, Force-Pushes und das Loeschen von `main` sind nicht erlaubt.
+Eine menschliche Freigabe wird nicht automatisch behauptet: `bernedom` wurde
+fuer [PR #11](https://github.com/timeo2342/450-tictactest-mvk/pull/11) angefragt.
 Die private Abgabe und der Reviewer `bernedom` muessen mit den
 Repository-Berechtigungen abgestimmt sein. Ein oeffentlicher Fork laesst sich
 nicht einfach auf privat umstellen; dafuer ist ein separates privates Repository
