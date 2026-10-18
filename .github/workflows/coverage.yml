@@ -36,8 +36,8 @@ jobs:
     - name: Gradle Wrapper ausführbar machen
       run: chmod +x gradlew
 
-    - name: Tests, 90-percent branch gate and mutation testing
-      run: ./gradlew check pitest
+    - name: Unit, E2E, 90-percent branch gate and mutation testing
+      run: ./gradlew check e2eTest pitest
 
     - name: Upload all test, coverage and mutation reports
       if: always()

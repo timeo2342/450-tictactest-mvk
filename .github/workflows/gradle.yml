@@ -37,8 +37,8 @@ jobs:
     - name: Gradle Wrapper ausführbar machen
       run: chmod +x gradlew
 
-    - name: Tests ausführen (im DevContainer-Image, Java 25)
-      run: ./gradlew check
+    - name: Unit- und E2E-Tests ausführen (im DevContainer-Image, Java 25)
+      run: ./gradlew check e2eTest
 
     - name: Testreport hochladen
       if: always()

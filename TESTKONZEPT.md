@@ -8,7 +8,7 @@ Modul 450 – TicTacToe-Projekt
 ## 1. Einleitung
 
 ### 1.0 Dokumentstand und Verantwortung
-Version: **1.0**, Stand: **30.09.2026**.
+Version: **1.1**, Stand: **30.09.2026**.
 Projektverantwortung und Pflege: **Timeo Lutz (`timeo2342`)**.
 Fachlicher Review gemäss Unterrichtsauftrag: **`bernedom`**, nach Einladung im PR.
 Die CI übernimmt die automatisierte Ausführung; die Freigabe bleibt beim
@@ -38,6 +38,9 @@ JUnit Pioneer stellt Ein-/Ausgabestreams bereit. Property-Tests mit jqwik
 ergänzen einzelne Beispiele durch generierte Daten. Der perfekte Spieler
 wird für beide Farben gegen alle legalen gegnerischen Zugfolgen geprüft.
 PITest verändert Produktionscode, um die Fehlererkennung der Tests zu messen.
+Die separate E2E-Suite startet `main` mit dem echten HumanPlayer und GreedyPlayer,
+liest vorbereitete Konsoleneingaben und prüft die Ausgabe bis zum Resultat oder
+zum erwarteten Fehler. Es werden dabei keine Spieler durch Test-Doubles ersetzt.
 Der Release-Workflow führt einen System-Smoke-Test des gebauten und anschließend
 erneut heruntergeladenen JARs aus. Manuelle Terminalbedienung bleibt ergänzend.
 
@@ -58,6 +61,7 @@ Konfiguriert in `build.gradle` (`useJUnitPlatform()`), CI in
 
 ### 2.3 Testausführung
 - Lokal: `./gradlew test` oder über die IDE (IntelliJ)
+- Nur E2E: `./gradlew e2eTest` (Windows: `.\gradlew.bat e2eTest`)
 - Qualitätsprüfung: `./gradlew check pitest`
 - CI: Qualitätsreports bei Branch-Pushes und PRs; zusätzlicher Container-Job
   bei Push und Pull Request auf `main` (Java 25, Temurin)
@@ -71,6 +75,7 @@ Alle Tests und Helper liegen unter `src/test/java/ch/bbw/m450/tictactoe/`.
 | `TicTacToeFixtures` | `boardOf`, `emptyBoard`, geskriptete Spieler und Argument-Provider; frische Boards/Spieler pro Test |
 | `TicTacToeMainTest` | Alle Gewinnlinien für beide Farben, unvollständige Linien, Siege, Draw, ungültige Züge, Board-Kopierschutz und Darstellung |
 | `HumanPlayerTest` | Pioneer-Ein-/Ausgabe, mehrere Eingabezeilen, Fehlerverhalten, vollständiger `main`-Aufruf |
+| `TicTacToeE2ETest` | Eigener Task: vollständige Konsolenspiele, ungültige/böswillige Eingaben, EOF und zeitbegrenzte Lastfälle |
 | `GreedyPlayerTest` | Erstes freies Feld einschließlich Index 8, volles Board und Unverändertheit |
 | `StoneTest` | Beide Farbwechsel und Rückkehr zur Ausgangsfarbe |
 | `PerfectPlayerTest` | Sofortige Siege/Blocks, Determinismus, Board-Isolation und alle legalen Gegnerzugfolgen |
@@ -81,8 +86,12 @@ und `@CsvSource`. Eine zentrale Gewinnlinienliste wird für beide Farben und
 Negativfälle wiederverwendet. Pioneer richtet Ein-/Ausgabestreams pro Test ein
 und räumt sie wieder auf. Es gibt keine global zwischen Tests geteilten Boards.
 Die bisherigen reinen Dummy-Assertions werden durch fachliche Tests ersetzt.
-Jupiter und jqwik laufen gemeinsam in `test`; PITest verwendet die
-deterministischen Jupiter-Klassen mit dem Muster `*Test`.
+Jupiter und jqwik laufen gemeinsam in `test`; der Tag `e2e` wird dort ausgeschlossen
+und ausschließlich in `e2eTest` ausgeführt. `check` verlangt beide Tasks.
+JaCoCo führt beide Ausführungsdateien zusammen; der abschließende Report von
+`test` startet dafür bei Bedarf auch den E2E-Task.
+PITest verwendet die deterministischen Jupiter-Klassen mit dem Muster `*Test`,
+ausgenommen `TicTacToeE2ETest`. Die Lastfälle werden nicht für jeden Mutanten wiederholt.
 
 ## 4. Testziele und Testfälle
 
@@ -93,11 +102,12 @@ Testziele sind nummeriert und den konkreten Testfällen zugeordnet.
 | Z1: Gewinnerkennung | T1.1–T1.3 | Alle acht Linien für beide Farben; fehlende/falsche Steine und leere/Draw-Boards sind kein Sieg |
 | Z2: Spielablauf | T2.1–T2.4 | CROSS/CIRCLE gewinnen, Draw nach neun Zügen, Sieg am letzten Zug hat Vorrang |
 | Z3: Ungültige Spielzüge und Isolation | T3.1–T3.4 | Identische Spieler, -1/9 und belegte Felder werden abgelehnt; Spieler können das echte Board nicht verändern |
-| Z4: Ein-/Ausgabe | T4.1–T4.6 | Boarddarstellung, Eingabeaufforderung, gepufferte Züge und unveränderte Exceptions |
+| Z4: Ein-/Ausgabe | T4.1–T4.9 | Boarddarstellung, gepufferte Züge, verständliche Wiederholung ungültiger Eingaben und EOF |
 | Z5: Einfache Spieler und Farben | T5.1–T5.3 | Greedy wählt das erste freie Feld; volles Board wirft Fehler; `opponent` wechselt die Farbe |
 | Z6: Perfekter Spieler | T6.1–T6.6 | Nie verlieren bei legalen Gegnerzügen, direkte Siege/Blocks, deterministisch und ohne Seiteneffekte |
 | Z7: Generierte Daten | T7.1 | Gewinnerkennung stimmt für 1.000 Boards mit unabhängigem Oracle überein |
 | Z8: Qualitäts- und Release-Gates | T8.1–T8.4 | Feste Branch-Grenze, kein PR-Coverage-Rückgang, Mutation-Grenze und startbares Release-JAR |
+| Z9: Konsolen-E2E | E1–E13 in Abschnitt 10 | Alle Spielausgänge, Fehler- und Lastfälle, eigene Ausführung und Test-first-Korrektur |
 
 ## 5. Testfälle im Detail (GIVEN-WHEN-THEN)
 
@@ -109,7 +119,7 @@ Die GIVEN-WHEN-THEN-Beschreibungen und konkreten Methodennamen stehen in
 Aktuell nicht durch Tests abgedeckt (IST-Zustand):
 - Interaktive Terminalbedienung (HumanPlayer wird mit vorbereiteten Eingaben getestet)
 - Ungültige Board-Grössen ausserhalb der Helper-Prüfung
-- Leistungs-/Lasttests, grafische UI und externe Persistenz (nicht Bestandteil der Anwendung)
+- Umfassende Leistungs-/Lasttests, grafische UI und externe Persistenz; begrenzte Eingabelastfälle sind in Abschnitt 10 beschrieben
 
 ## 7. Testorganisation und Ablauf
 
@@ -161,3 +171,93 @@ Hohe Coverage beweist keine Fehlerfreiheit. Der erschöpfende Gegnerbaum des
 PerfectPlayer prüft legale Züge; beliebige beschädigte oder bereits widersprüchliche
 Boards sind kein unterstützter Spieleingang. Terminaldarstellung und
 Docker-/GitHub-Berechtigungen hängen zusätzlich von der jeweiligen Umgebung ab.
+
+## 10. E2E-Auftrag vom 30.09.2026
+
+### 10.1 Umfang und Durchführung
+
+`TicTacToeE2ETest` verwendet JUnit Pioneer `@StdIo`/`StdOut`; bei generierten
+Eingaben wird innerhalb dieses Fixtures ein Pioneer-`StdIn` eingesetzt.
+Die Erweiterung stellt die ursprünglichen Streams nach jedem Fall wieder her.
+Die Tests laufen seriell und starten die echte `main`-Methode, keine Shell.
+Der zusätzliche JAR-Smoke-Test des Release-Workflows bleibt unabhängig erhalten.
+
+Alle E2E-Fälle haben `@Timeout(10)` mit separatem Ausführungsthread.
+Der Gradle-Task hat zusätzlich ein Zwei-Minuten-Limit als äußere Absicherung.
+Die Fälle mit großen Eingaben bleiben bewusst endlich, damit bei einer
+Regression nicht absichtlich unbegrenzter Speicher verbraucht wird.
+
+### 10.2 Testfälle: erwartetes und tatsächliches Verhalten
+
+Lokaler Stand nach der Eingabeverbesserung am 30.09.2026: 30 E2E-Ausführungen erfolgreich,
+keine Fehler, keine übersprungenen Fälle. Die tatsächlichen Ergebnisse stammen
+aus `build/test-results/e2eTest/`, nicht aus einem behaupteten neuen GitHub-Lauf.
+
+| ID | Eingabe / Fall | Erwartetes Verhalten | Tatsächliches Verhalten |
+|----|----------------|----------------------|-------------------------|
+| E1 | `0, 2, 4, 6` | X gewinnt; Endbrett `XOXOXOX..`; vier Aufforderungen | Entspricht Erwartung |
+| E2 | `8, 7, 3` | O gewinnt; Endbrett `OOOX...XX`; drei Aufforderungen | Entspricht Erwartung |
+| E3 | `1, 3, 4, 6, 8` | Draw; volles Endbrett `OXOXXOXOX`; fünf Aufforderungen | Zunächst Endbrett fehlend; nach Test-first-Korrektur korrekt |
+| E4 | Leerzeile, Text, Leerzeichen, Dezimalzahl, Überlauf (8 Varianten), danach Siegfolge | Fehlermeldung, erneute Eingabe ohne Zugverlust, danach X-Sieg | Entspricht Erwartung |
+| E5 | `-1`, `9`, Integer-Minimum/-Maximum, danach Siegfolge | Bereichsmeldung, keine Brettänderung durch ungültigen Zug, danach X-Sieg | Entspricht Erwartung |
+| E6 | `0, 1, 0, 2, 4, 6`: beide belegten Farben erneut wählen | Zwei Belegungsmeldungen; gleicher Spieler bleibt am Zug und gewinnt | Entspricht Erwartung |
+| E7 | Shell-/HTML-/SQL-artiger Text, NUL, ANSI-Steuerfolge, Pfadtext (7 Varianten), danach Siegfolge | Fehlermeldung ohne Echo des Inputs auf stdout, danach X-Sieg | Entspricht Erwartung |
+| E8 | EOF sofort bzw. nach erstem Spielerzug (2 Fälle) | `NoSuchElementException`; kein Endlosschleifen-Retry, kein erfundenes Ergebnis | Entspricht Erwartung |
+| E9 | 1.048.576 Ziffern, danach Siegfolge | Fehlermeldung und X-Sieg innerhalb von 10 s; Ausgabe unter 4.096 Zeichen | Entspricht Erwartung |
+| E10 | 1.000 ungültige Zeilen, danach Siegfolge | Iterative Wiederholung ohne Stacküberlauf; X-Sieg innerhalb von 10 s, Ausgabe unter 512.000 Zeichen | Entspricht Erwartung |
+| E11 | X-Sieg mit danach angehängter ungültiger Eingabe | Spiel endet beim Sieg; zusätzliche Eingabe wird nicht verarbeitet | Entspricht Erwartung |
+| E12 | Siegfolge mit Leerzeichen und Tabs um Zahlen | X-Sieg ohne Fehlermeldungen | Entspricht Erwartung |
+| E13 | Text und Position 9, danach EOF | Zwei Meldungen, dann `NoSuchElementException`, kein endloser Retry | Entspricht Erwartung |
+
+Der HumanPlayer prüft seine Eingabe und fragt bei ungültigen Eingaben im selben
+Zug erneut nach. Die Spielschleife behält ihre Prüfungen für ungültige Züge
+anderer Spieler bei. EOF wird nicht als gewöhnlicher Eingabefehler wiederholt.
+Die End-to-End-Prüfungen ersetzen keinen Nachweis gegen beliebige
+Denial-of-Service-Angriffe: Eine unbegrenzt lange Eingabe kann weiterhin Speicher
+binden, und ein offener Eingabestream ohne Daten/EOF wartet auf Benutzereingabe.
+Eine endlose Folge ungültiger Zeilen kann entsprechend viele Meldungen erzeugen.
+Die Test-Timeouts sind keine neuen Produktionslimits. Diese Risiken bleiben
+ausdrücklich dokumentiert; Fuzzing und die weiteren Zusatzaufträge sind optional
+und werden nicht als umgesetzt ausgewiesen.
+
+### 10.3 Gefundener Fehler und Test-first-Nachweis
+
+**E2E-01: Letzter Zug bei Unentschieden nicht sichtbar.**
+Die Spielschleife zeigte das Brett vor jeder menschlichen Eingabe und bei
+Siegen am Ende. Bei Draw gab sie nur `it's a draw!` aus. Dadurch blieb im
+zuletzt sichtbaren Brett Feld 8 frei, obwohl der letzte Zug bereits gespielt war.
+
+**Rotphase:** Zuerst wurde `main_drawShowsTheFinalBoardAndResult` hinzugefügt
+und ohne Produktionsänderung ausgeführt:
+`.\gradlew.bat e2eTest --tests "*TicTacToeE2ETest.main_drawShowsTheFinalBoardAndResult"`.
+Ergebnis: ein ausgeführter, fehlgeschlagener Test. Erwartet war das volle
+Endbrett plus Draw-Meldung; tatsächlich fehlte das Endbrett.
+
+**Korrektur:** Der Draw-Zweig gibt jetzt wie der Sieg-Zweig `toString(board)`
+vor dem Resultat aus. Die bestehende Integrationsassertion wurde entsprechend
+angepasst; diese erste Korrektur änderte keine Zugregeln und kein Eingabeverhalten.
+
+**Grünphase:** Derselbe E2E-Fall und anschließend die komplette E2E-Suite
+bestehen. Der gemeinsame Lauf `check e2eTest pitest` war vor der separaten Eingabeverbesserung erfolgreich:
+150 bisherige Testausführungen plus 28 separate E2E-Ausführungen,
+94/94 Branches, 69/70 Zeilen und 75/75 getötete Mutanten.
+
+**Separate Eingabeverbesserung:** Verständliche Wiederholungen für ungültige
+Zahlen und belegte Felder sind anschließend im Branch `feat/friendly-console-input`
+ergänzt worden. Dieser baut auf `feat/console-e2e` auf und aktualisiert die
+E2E-Erwartungen auf das neue Verhalten. Der lokale gemeinsame Lauf besteht mit
+154 Unit-/Property-Ausführungen und 30 E2E-Ausführungen, 100/100 Branches,
+81/82 Zeilen und 83/83 getöteten Mutanten.
+
+### 10.4 CI und Veröffentlichung
+
+Qualitäts-CI und DevContainer-CI rufen `e2eTest` ausdrücklich auf; `check`
+bindet den Task ebenfalls ein. Der Release-Workflow verlangt ihn vor einem
+zukünftigen Release. Die vorhandenen Artifact-Schritte archivieren auch
+`build/reports/tests/e2eTest/` und `build/test-results/e2eTest/`.
+Die gemeinsame Coverage-Auswertung bleibt an den bisherigen Reportpfaden,
+sodass PR-Vergleich und Coverage-Zeitreihe kompatibel bleiben.
+
+Diese Erweiterung wird auf einem separaten Entwicklungsbranch bereitgestellt.
+Es wird dafür kein Release, PR oder Review-Aufruf erstellt. Die bestehenden
+Release-JARs bleiben unverändert; die Branch-CI führt die neue Suite beim Push aus.

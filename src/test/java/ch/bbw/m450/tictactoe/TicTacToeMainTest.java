@@ -63,7 +63,8 @@ class TicTacToeMainTest {
 	void play_drawUsesAllNineMoves(StdOut out) {
 		assertThat(TicTacToeMain.play(scriptedPlayer(0, 2, 3, 7, 8), scriptedPlayer(1, 4, 5, 6)))
 				.isNull();
-		assertThat(out.capturedString()).isEqualTo("it's a draw!" + System.lineSeparator());
+		assertThat(out.capturedString()).isEqualTo(TicTacToeMain.toString(boardOf("XOXXOOOXX"))
+				+ "it's a draw!" + System.lineSeparator());
 	}
 
 	@Test
