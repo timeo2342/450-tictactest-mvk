@@ -3,7 +3,7 @@
 Benutzerrelevante Aenderungen der Anwendung. DevContainer-Versionen werden
 unabhaengig davon verwaltet. Ein Eintrag allein veroeffentlicht keinen Release.
 
-## [Unreleased]
+## [1.0.5] - 2026-10-18
 
 ### Added
 - Eigener Gradle-Task `e2eTest` fuer vollstaendige Konsolenspiele mit JUnit Pioneer.
